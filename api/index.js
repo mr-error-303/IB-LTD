@@ -1,5 +1,4 @@
-// Vercel serverless function
-module.exports = function handler(req, res) {
+module.exports = (req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -11,14 +10,14 @@ module.exports = function handler(req, res) {
     return;
   }
 
-  // Simple API response - COMPLETELY NEW VERSION
+  // Simple API response
   res.status(200).json({
     success: true,
-    message: 'IB LTD API is working! (Fixed CommonJS)',
+    message: 'IB LTD API is working! (API folder structure)',
     timestamp: new Date().toISOString(),
     method: req.method,
     url: req.url,
-    version: '4.0.0',
-    deployment: 'commonjs-fixed'
+    version: '5.0.0',
+    deployment: 'api-folder'
   });
-}
+};

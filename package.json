@@ -1,10 +1,10 @@
 {
   "name": "ib-ltd-api",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "description": "IB LTD API",
-  "main": "index.js",
+  "main": "api/index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node api/index.js"
   },
   "keywords": [],
   "author": "",
