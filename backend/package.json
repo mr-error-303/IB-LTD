@@ -9,7 +9,8 @@
     "build": "echo 'No build step required'",
     "test": "jest --detectOpenHandles --forceExit",
     "test:watch": "jest --watch --detectOpenHandles",
-    "test:coverage": "jest --coverage --detectOpenHandles --forceExit"
+    "test:coverage": "jest --coverage --detectOpenHandles --forceExit",
+    "vercel-build": "echo 'No build step required'"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

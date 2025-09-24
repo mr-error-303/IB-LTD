@@ -1,0 +1,6 @@
+# Ignore files that might trigger framework detection
+node_modules
+test
+*.test.js
+coverage
+.env*
