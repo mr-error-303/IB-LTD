@@ -1,7 +1,8 @@
 {
   "name": "ib-ltd-api",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "Simple API for IB LTD",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
