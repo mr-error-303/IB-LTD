@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "build": "echo 'No build step required'",
     "test": "jest --detectOpenHandles --forceExit",
     "test:watch": "jest --watch --detectOpenHandles",
     "test:coverage": "jest --coverage --detectOpenHandles --forceExit"
@@ -72,5 +73,8 @@
     "mongodb"
   ],
   "author": "IB LTD Development Team",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": "18.x"
+  }
 }
