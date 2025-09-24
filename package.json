@@ -1,16 +1,12 @@
 {
   "name": "ib-ltd-api",
-  "version": "3.0.0",
-  "description": "Simple API for IB LTD",
-  "type": "module",
+  "version": "4.0.0",
+  "description": "IB LTD API",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": [
-    "vercel",
-    "serverless"
-  ],
-  "author": "IB LTD",
+  "keywords": [],
+  "author": "",
   "license": "ISC"
 }
