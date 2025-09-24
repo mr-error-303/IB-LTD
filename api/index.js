@@ -1,5 +1,5 @@
-// Vercel Serverless Function
-export default async function handler(req, res) {
+// Vercel Serverless Function - CommonJS
+module.exports = async (req, res) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       message: "IB LTD API is working perfectly!",
-      version: "8.0.0",
+      version: "9.0.0",
       timestamp: new Date().toISOString(),
       method: req.method,
       url: req.url
@@ -25,4 +25,4 @@ export default async function handler(req, res) {
       error: error.message
     });
   }
-}
+};
