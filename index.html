@@ -4,15 +4,104 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IB LTD API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .api-test {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #result {
+            margin-top: 15px;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+    </style>
 </head>
 <body>
-    <h1>IB LTD API</h1>
-    <p>Status: Working</p>
-    <p>Version: 10.0.0</p>
-    <p>Timestamp: <span id="timestamp"></span></p>
-    
+    <div class="container">
+        <h1>🏢 IB LTD API</h1>
+        <p><strong>Status:</strong> <span class="status">HTML Page Working</span></p>
+        <p><strong>Version:</strong> 12.0.0</p>
+        <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
+        
+        <div class="api-test">
+            <h3>API Test</h3>
+            <p>Test the serverless function:</p>
+            <button onclick="testAPI()">Test API Endpoint</button>
+            <div id="result"></div>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <h3>Deployment Status</h3>
+            <p>✅ Static HTML deployment successful</p>
+            <p id="api-status">🔄 Testing serverless function...</p>
+        </div>
+    </div>
+
     <script>
+        // Update timestamp
         document.getElementById('timestamp').textContent = new Date().toISOString();
+        
+        // Test API function
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            const apiStatus = document.getElementById('api-status');
+            
+            try {
+                resultDiv.textContent = 'Testing...';
+                
+                const response = await fetch('/api');
+                const data = await response.json();
+                
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+                apiStatus.innerHTML = '✅ Serverless function working';
+                apiStatus.className = 'status';
+            } catch (error) {
+                resultDiv.textContent = 'Error: ' + error.message;
+                apiStatus.innerHTML = '❌ Serverless function failed: ' + error.message;
+                apiStatus.className = 'error';
+            }
+        }
+        
+        // Auto-test API on page load
+        window.onload = function() {
+            setTimeout(testAPI, 1000);
+        };
     </script>
 </body>
 </html>
