@@ -10,12 +10,13 @@ module.exports = (req, res) => {
     return;
   }
 
-  // Simple API response
+  // Simple API response - FIXED VERSION
   res.status(200).json({
     success: true,
-    message: 'IB LTD API is working!',
+    message: 'IB LTD API is working! (Fixed deployment)',
     timestamp: new Date().toISOString(),
     method: req.method,
-    url: req.url
+    url: req.url,
+    version: '2.0.0'
   });
 };
