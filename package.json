@@ -1,10 +1,9 @@
 {
   "name": "ib-ltd-api",
-  "version": "11.0.0",
+  "version": "12.0.0",
   "description": "IB LTD API",
-  "type": "module",
   "scripts": {
-    "start": "node api/index.js"
+    "start": "node index.js"
   },
   "dependencies": {},
   "devDependencies": {},
