@@ -76,7 +76,7 @@
   "author": "IB LTD Development Team",
   "license": "MIT",
   "engines": {
-    "node": "18.x"
+    "node": "22.x"
   },
   "vercel": {
     "framework": null
