@@ -1,6 +1,6 @@
 {
   "name": "ib-ltd-api",
-  "version": "7.0.0",
+  "version": "8.0.0",
   "description": "IB LTD API",
   "type": "module",
   "scripts": {

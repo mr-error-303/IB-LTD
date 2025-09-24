@@ -1,8 +1,28 @@
-export default function handler(req, res) {
-  res.status(200).json({
-    message: "IB LTD API is working!",
-    status: "success",
-    version: "7.0.0",
-    timestamp: new Date().toISOString()
-  });
+// Vercel Serverless Function
+export default async function handler(req, res) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  try {
+    return res.status(200).json({
+      success: true,
+      message: "IB LTD API is working perfectly!",
+      version: "8.0.0",
+      timestamp: new Date().toISOString(),
+      method: req.method,
+      url: req.url
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 }
