@@ -1,6 +1,6 @@
 [build]
   publish = "customer-portal/build"
-  command = "cd customer-portal && npm run build"
+  command = "cd customer-portal && npm run build && cd ../netlify/functions && npm install"
 
 [functions]
   directory = "netlify/functions"
