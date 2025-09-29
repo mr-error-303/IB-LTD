@@ -2,6 +2,7 @@
   command = "cd customer-portal && npm run build"
   publish = "customer-portal/build"
   functions = "netlify/functions"
+  base = "."
 
 [build.environment]
   REACT_APP_API_URL = "https://international-bank-limited.netlify.app/api"
