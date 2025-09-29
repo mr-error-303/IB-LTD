@@ -69,7 +69,7 @@ const AdminLogin: React.FC = () => {
         }
       } else {
         // Production - use API endpoint
-        const apiUrl = 'https://international-bank-limited.netlify.app/.netlify/functions/api/api/admin/auth/login';
+        const apiUrl = 'https://international-bank-limited.netlify.app/api/admin/auth/login';
         
         const response = await fetch(apiUrl, {
           method: 'POST',
