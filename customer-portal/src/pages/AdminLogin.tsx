@@ -69,23 +69,29 @@ const AdminLogin: React.FC = () => {
           adminKey: credentials.adminKey
         });
 
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: credentials.username,
-            password: credentials.password,
-            adminKey: credentials.adminKey
-          }),
-        });
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: credentials.username,
+              password: credentials.password,
+              adminKey: credentials.adminKey
+            }),
+          });
 
-        console.log('API Response status:', response.status);
-        const data = await response.json();
-        console.log('API Response data:', data);
+          console.log('API Response status:', response.status);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          console.log('API Response data:', data);
 
-        if (data.success) {
+          if (data.success) {
           // Create admin user object from API response
           const adminUser = {
             id: data.user.id,
@@ -117,6 +123,10 @@ const AdminLogin: React.FC = () => {
           console.error('Login failed:', data.message);
           setError(data.message || 'Invalid admin credentials');
         }
+      } catch (fetchError) {
+        console.error('Network error during API call:', fetchError);
+        setError('Network error. Please check your connection and try again.');
+      }
       }
     } catch (error) {
       console.error('Admin login error:', error);
