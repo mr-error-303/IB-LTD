@@ -72,6 +72,7 @@ exports.handler = async (event, context) => {
       );
 
       console.log('Credential validation result:', isValid);
+      console.log('Checking against credentials:', validCredentials);
 
       if (isValid) {
         return {
@@ -80,7 +81,7 @@ exports.handler = async (event, context) => {
           body: JSON.stringify({
             success: true,
             message: 'Admin login successful',
-            token: 'mock-jwt-token-' + Date.now(),
+            token: 'mock-admin-jwt-token-' + Date.now(),
             user: {
               id: 1,
               email: normalizedEmail,
@@ -91,11 +92,15 @@ exports.handler = async (event, context) => {
         };
       } else {
         return {
-          statusCode: 401,
+          statusCode: 200,
           headers,
           body: JSON.stringify({
             success: false,
-            message: 'Invalid admin credentials'
+            message: 'Invalid admin credentials',
+            debug: {
+              provided: { email: normalizedEmail, password: normalizedPassword ? '[PROVIDED]' : '[MISSING]', adminKey: normalizedAdminKey ? '[PROVIDED]' : '[MISSING]' },
+              expected: validCredentials
+            }
           })
         };
       }
