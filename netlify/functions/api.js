@@ -81,6 +81,19 @@ app.post('/api/admin/auth/login', (req, res) => {
   console.log('Admin login attempt:', { email, password, adminKey });
   console.log('Valid credentials:', validAdminCredentials);
 
+  // Debug each credential check
+  validAdminCredentials.forEach((admin, index) => {
+    console.log(`Checking credential ${index}:`, {
+      emailMatch: admin.email === email,
+      passwordMatch: admin.password === password,
+      adminKeyMatch: admin.adminKey === adminKey,
+      adminEmail: admin.email,
+      inputEmail: email,
+      emailType: typeof admin.email,
+      inputEmailType: typeof email
+    });
+  });
+
   const isValidAdmin = validAdminCredentials.some(admin => 
     admin.email === email && 
     admin.password === password && 
