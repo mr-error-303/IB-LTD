@@ -21,27 +21,19 @@ const AdminLogin: React.FC = () => {
     setError('');
 
     try {
-      // Check if running in development or production
-      const isDevelopment = window.location.hostname === 'localhost';
+      // Check if we're in development or production
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       
       if (isDevelopment) {
-        // Local development - use hardcoded credentials
-        const validAdminCredentials = [
-          { username: 'admin', password: 'admin123', adminKey: 'admin123' },
-          { username: 'admin@ibltd.com', password: 'admin123', adminKey: 'admin123' },
-          { username: 'admin@example.com', password: 'admin123', adminKey: 'admin123' }
-        ];
-
-        const isValidAdmin = validAdminCredentials.some(admin => 
-          admin.username === credentials.username && 
-          admin.password === credentials.password && 
-          admin.adminKey === credentials.adminKey
-        );
-
-        if (isValidAdmin) {
+        // Development - use hardcoded credentials
+        if (
+          (credentials.username === 'admin@example.com' || credentials.username === 'admin') &&
+          credentials.password === 'admin123' &&
+          credentials.adminKey === 'admin123'
+        ) {
           // Create admin user object
           const adminUser = {
-            id: 'admin-1',
+            id: 1,
             name: 'Admin User',
             firstName: 'Admin',
             lastName: 'User',
@@ -71,6 +63,12 @@ const AdminLogin: React.FC = () => {
         // Production - use API endpoint
         const apiUrl = 'https://international-bank-limited.netlify.app/api/admin/auth/login';
         
+        console.log('Attempting admin login with:', {
+          email: credentials.username,
+          password: credentials.password,
+          adminKey: credentials.adminKey
+        });
+
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
@@ -83,7 +81,9 @@ const AdminLogin: React.FC = () => {
           }),
         });
 
+        console.log('API Response status:', response.status);
         const data = await response.json();
+        console.log('API Response data:', data);
 
         if (data.success) {
           // Create admin user object from API response
@@ -111,8 +111,10 @@ const AdminLogin: React.FC = () => {
           // Store admin user and token in localStorage
           localStorage.setItem('bankingUser', JSON.stringify(adminUser));
           localStorage.setItem('adminToken', data.token);
+          console.log('Admin login successful, navigating to /admin');
           navigate('/admin');
         } else {
+          console.error('Login failed:', data.message);
           setError(data.message || 'Invalid admin credentials');
         }
       }
