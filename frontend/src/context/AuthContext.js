@@ -19,7 +19,9 @@ export const AuthProvider = ({ children }) => {
   // Set up axios interceptor for token
   useEffect(() => {
     // Set base URL for axios
-    axios.defaults.baseURL = 'http://localhost:5000';
+  axios.defaults.baseURL = process.env.NODE_ENV === 'production' 
+    ? '/.netlify/functions' 
+    : 'http://localhost:5000';
     
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;

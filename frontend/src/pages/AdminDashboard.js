@@ -114,7 +114,19 @@ const AdminDashboard = () => {
   }, [transactions, transactionFilter]);
 
   const handleUserStatusToggle = async (userId, currentStatus) => {
+    const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+    
+    // Store original state for potential rollback
+    const originalUsers = [...users];
+    
     try {
+      // Optimistic UI update - immediately change status
+      setUsers(users.map(user => 
+        user.id === userId 
+          ? { ...user, status: newStatus }
+          : user
+      ));
+
       const response = await fetch(`/api/admin/users/${userId}/status`, {
         method: 'PATCH',
         headers: {
@@ -122,19 +134,21 @@ const AdminDashboard = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          status: currentStatus === 'active' ? 'suspended' : 'active'
+          status: newStatus
         })
       });
 
-      if (response.ok) {
-        setUsers(users.map(user => 
-          user.id === userId 
-            ? { ...user, status: currentStatus === 'active' ? 'suspended' : 'active' }
-            : user
-        ));
+      if (!response.ok) {
+        throw new Error('Failed to update user status');
       }
     } catch (error) {
       console.error('Error updating user status:', error);
+      
+      // Rollback optimistic update on error
+      setUsers(originalUsers);
+      
+      // Show error message to user (you might want to add a toast notification here)
+      alert('Failed to update user status. Please try again.');
     }
   };
 

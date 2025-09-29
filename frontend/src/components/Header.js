@@ -14,7 +14,7 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-secondary-200">
+    <header className="bg-white dark:bg-secondary-800 shadow-sm border-b border-secondary-200 dark:border-secondary-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -25,7 +25,7 @@ const Header = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                 </svg>
               </div>
-              <span className="ml-2 text-xl font-bold text-secondary-900">IB LTD</span>
+              <span className="ml-2 text-xl font-bold text-secondary-900 dark:text-secondary-100">IB LTD</span>
             </Link>
           </div>
 
@@ -52,38 +52,38 @@ const Header = () => {
                   {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
                 </span>
               </div>
-              <span className="ml-2 text-secondary-700 font-medium hidden sm:block">
+              <span className="ml-2 text-secondary-700 dark:text-secondary-300 font-medium hidden sm:block">
                 {user?.firstName} {user?.lastName}
               </span>
-              <svg className="ml-1 h-4 w-4 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="ml-1 h-4 w-4 text-secondary-400 dark:text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
 
             {isDropdownOpen && (
-              <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+              <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-secondary-800 ring-1 ring-black ring-opacity-5 dark:ring-secondary-600 focus:outline-none z-50">
                 <div className="py-1">
-                  <div className="px-4 py-2 text-sm text-secondary-700 border-b border-secondary-100">
+                  <div className="px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 border-b border-secondary-100 dark:border-secondary-700">
                     <p className="font-medium">{user?.firstName} {user?.lastName}</p>
-                    <p className="text-secondary-500">{user?.email}</p>
+                    <p className="text-secondary-500 dark:text-secondary-400">{user?.email}</p>
                   </div>
                   <Link
                     to="/profile"
-                    className="block px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50 transition-colors duration-200"
+                    className="block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors duration-200"
                     onClick={() => setIsDropdownOpen(false)}
                   >
                     Profile Settings
                   </Link>
                   <Link
                     to="/account"
-                    className="block px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-50 transition-colors duration-200"
+                    className="block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors duration-200"
                     onClick={() => setIsDropdownOpen(false)}
                   >
                     Account Details
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200"
+                    className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
                   >
                     Sign out
                   </button>
@@ -96,11 +96,11 @@ const Header = () => {
 
       {/* Mobile Navigation */}
       <div className="md:hidden">
-        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-secondary-200">
+        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-secondary-200 dark:border-secondary-700">
           {isAdmin && (
             <Link
               to="/admin"
-              className="text-primary-600 hover:text-primary-700 block px-3 py-2 rounded-md text-base font-medium"
+              className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 block px-3 py-2 rounded-md text-base font-medium"
             >
               Admin
             </Link>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useAdminSecurity } from './AdminSecurityProvider';
 import './WithdrawalRequestManagement.css';
@@ -14,6 +14,7 @@ const WithdrawalRequestManagement = () => {
   const [loading, setLoading] = useState(true);
   const [selectedRequests, setSelectedRequests] = useState([]);
   const [showActionModal, setShowActionModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [currentRequest, setCurrentRequest] = useState(null);
   const [actionData, setActionData] = useState({
     action: '',
@@ -36,6 +37,21 @@ const WithdrawalRequestManagement = () => {
     totalItems: 0
   });
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [buttonLoading, setButtonLoading] = useState({});
+  const [lastClickTime, setLastClickTime] = useState({});
+
+  // Debounce function to prevent rapid clicks
+  const debounce = useCallback((func, delay, key) => {
+    const now = Date.now();
+    const lastClick = lastClickTime[key] || 0;
+    
+    if (now - lastClick < delay) {
+      return; // Ignore rapid clicks
+    }
+    
+    setLastClickTime(prev => ({ ...prev, [key]: now }));
+    return func();
+  }, [lastClickTime]);
 
   // Priority options
   const priorityOptions = [
@@ -72,40 +88,78 @@ const WithdrawalRequestManagement = () => {
 
   // Handle request approval
   const handleApproveRequest = async (requestId, data = {}) => {
-    try {
-      await performSecureOperation('approve_withdrawal', async () => {
-        await adminAPI.approveWithdrawalRequest(requestId, {
-          comment: data.comment,
-          priority: data.priority || 'normal'
+    const buttonKey = `approve-${requestId}`;
+    
+    return debounce(async () => {
+      setButtonLoading(prev => ({ ...prev, [buttonKey]: true }));
+      
+      try {
+        await performSecureOperation('approve_withdrawal', async () => {
+          await adminAPI.approveWithdrawalRequest(requestId, {
+            comment: data.comment,
+            priority: data.priority || 'normal'
+          });
+          setMessage({ type: 'success', text: 'Withdrawal request approved successfully' });
+          
+          // Optimistic UI update
+          setWithdrawalRequests(prev => ({
+            ...prev,
+            data: prev.data.map(req => 
+              req._id === requestId 
+                ? { ...req, status: 'approved', adminComment: data.comment, priority: data.priority || 'normal' }
+                : req
+            )
+          }));
+          
+          fetchWithdrawalRequests();
+          setShowActionModal(false);
+          resetActionData();
         });
-        setMessage({ type: 'success', text: 'Withdrawal request approved successfully' });
-        fetchWithdrawalRequests();
-        setShowActionModal(false);
-        resetActionData();
-      });
-    } catch (error) {
-      console.error('Error approving withdrawal request:', error);
-      setMessage({ type: 'error', text: 'Failed to approve withdrawal request' });
-    }
+      } catch (error) {
+        console.error('Error approving withdrawal request:', error);
+        setMessage({ type: 'error', text: 'Failed to approve withdrawal request' });
+      } finally {
+        setButtonLoading(prev => ({ ...prev, [buttonKey]: false }));
+      }
+    }, 300, buttonKey);
   };
 
   // Handle request rejection
   const handleRejectRequest = async (requestId, data = {}) => {
-    try {
-      await performSecureOperation('reject_withdrawal', async () => {
-        await adminAPI.rejectWithdrawalRequest(requestId, {
-          comment: data.comment,
-          reason: data.reason
+    const buttonKey = `reject-${requestId}`;
+    
+    return debounce(async () => {
+      setButtonLoading(prev => ({ ...prev, [buttonKey]: true }));
+      
+      try {
+        await performSecureOperation('reject_withdrawal', async () => {
+          await adminAPI.rejectWithdrawalRequest(requestId, {
+            comment: data.comment,
+            reason: data.reason
+          });
+          setMessage({ type: 'success', text: 'Withdrawal request rejected successfully' });
+          
+          // Optimistic UI update
+          setWithdrawalRequests(prev => ({
+            ...prev,
+            data: prev.data.map(req => 
+              req._id === requestId 
+                ? { ...req, status: 'rejected', adminComment: data.comment, reason: data.reason }
+                : req
+            )
+          }));
+          
+          fetchWithdrawalRequests();
+          setShowActionModal(false);
+          resetActionData();
         });
-        setMessage({ type: 'success', text: 'Withdrawal request rejected successfully' });
-        fetchWithdrawalRequests();
-        setShowActionModal(false);
-        resetActionData();
-      });
-    } catch (error) {
-      console.error('Error rejecting withdrawal request:', error);
-      setMessage({ type: 'error', text: 'Failed to reject withdrawal request' });
-    }
+      } catch (error) {
+        console.error('Error rejecting withdrawal request:', error);
+        setMessage({ type: 'error', text: 'Failed to reject withdrawal request' });
+      } finally {
+        setButtonLoading(prev => ({ ...prev, [buttonKey]: false }));
+      }
+    }, 300, buttonKey);
   };
 
   // Handle priority update
@@ -122,22 +176,43 @@ const WithdrawalRequestManagement = () => {
     }
   };
 
-  // Handle bulk operations
+  // Handle bulk operations with optimistic UI updates
   const handleBulkApprove = async () => {
     if (selectedRequests.length === 0) {
       setMessage({ type: 'warning', text: 'Please select requests to approve' });
       return;
     }
 
+    // Store original state for potential rollback
+    const originalRequests = withdrawalRequests.data;
+    const requestsToUpdate = selectedRequests;
+
     try {
+      // Optimistic UI update - immediately update status
+      setWithdrawalRequests(prev => ({
+        ...prev,
+        data: prev.data.map(req => 
+          requestsToUpdate.includes(req._id) 
+            ? { ...req, status: 'approved' }
+            : req
+        )
+      }));
+      
+      // Clear selection immediately for better UX
+      setSelectedRequests([]);
+      setMessage({ type: 'success', text: `${requestsToUpdate.length} withdrawal requests approved` });
+
       await performSecureOperation('bulk_approve_withdrawals', async () => {
-        await adminAPI.bulkApproveWithdrawalRequests({ requestIds: selectedRequests });
-        setMessage({ type: 'success', text: `${selectedRequests.length} withdrawal requests approved` });
-        setSelectedRequests([]);
+        await adminAPI.bulkApproveWithdrawalRequests({ requestIds: requestsToUpdate });
+        // Refresh data to ensure consistency
         fetchWithdrawalRequests();
       });
     } catch (error) {
       console.error('Error bulk approving withdrawals:', error);
+      
+      // Rollback optimistic updates on error
+      setWithdrawalRequests(prev => ({ ...prev, data: originalRequests }));
+      setSelectedRequests(requestsToUpdate);
       setMessage({ type: 'error', text: 'Failed to approve selected requests' });
     }
   };
@@ -148,15 +223,36 @@ const WithdrawalRequestManagement = () => {
       return;
     }
 
+    // Store original state for potential rollback
+    const originalRequests = withdrawalRequests.data;
+    const requestsToUpdate = selectedRequests;
+
     try {
+      // Optimistic UI update - immediately update status
+      setWithdrawalRequests(prev => ({
+        ...prev,
+        data: prev.data.map(req => 
+          requestsToUpdate.includes(req._id) 
+            ? { ...req, status: 'rejected' }
+            : req
+        )
+      }));
+      
+      // Clear selection immediately for better UX
+      setSelectedRequests([]);
+      setMessage({ type: 'success', text: `${requestsToUpdate.length} withdrawal requests rejected` });
+
       await performSecureOperation('bulk_reject_withdrawals', async () => {
-        await adminAPI.bulkRejectWithdrawalRequests({ requestIds: selectedRequests });
-        setMessage({ type: 'success', text: `${selectedRequests.length} withdrawal requests rejected` });
-        setSelectedRequests([]);
+        await adminAPI.bulkRejectWithdrawalRequests({ requestIds: requestsToUpdate });
+        // Refresh data to ensure consistency
         fetchWithdrawalRequests();
       });
     } catch (error) {
       console.error('Error bulk rejecting withdrawals:', error);
+      
+      // Rollback optimistic updates on error
+      setWithdrawalRequests(prev => ({ ...prev, data: originalRequests }));
+      setSelectedRequests(requestsToUpdate);
       setMessage({ type: 'error', text: 'Failed to reject selected requests' });
     }
   };
@@ -198,6 +294,22 @@ const WithdrawalRequestManagement = () => {
         ? prev.filter(id => id !== requestId)
         : [...prev, requestId]
     );
+  };
+
+  // Handle view details
+  const handleViewDetails = (request) => {
+    const buttonKey = `view-${request._id}`;
+    
+    return debounce(() => {
+      setButtonLoading(prev => ({ ...prev, [buttonKey]: true }));
+      
+      // Immediate UI response
+      setTimeout(() => {
+        setCurrentRequest(request);
+        setShowDetailModal(true);
+        setButtonLoading(prev => ({ ...prev, [buttonKey]: false }));
+      }, 50); // Minimal delay for visual feedback
+    }, 200, buttonKey);
   };
 
   const handleSelectAll = () => {
@@ -481,28 +593,31 @@ const WithdrawalRequestManagement = () => {
                       {request.status === 'pending' && (
                         <>
                           <button
-                            className="btn btn-sm btn-success"
-                            onClick={() => openActionModal(request, 'approve')}
-                            title="Approve Request"
-                          >
-                            ✅
-                          </button>
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => openActionModal(request, 'reject')}
-                            title="Reject Request"
-                          >
-                            ❌
-                          </button>
+                             className="btn btn-sm btn-success"
+                             onClick={() => openActionModal(request, 'approve')}
+                             title="Approve Request"
+                             disabled={buttonLoading[`approve-${request._id}`]}
+                           >
+                             {buttonLoading[`approve-${request._id}`] ? '⏳' : '✅'}
+                           </button>
+                           <button
+                             className="btn btn-sm btn-danger"
+                             onClick={() => openActionModal(request, 'reject')}
+                             title="Reject Request"
+                             disabled={buttonLoading[`reject-${request._id}`]}
+                           >
+                             {buttonLoading[`reject-${request._id}`] ? '⏳' : '❌'}
+                           </button>
                         </>
                       )}
                       <button
-                        className="btn btn-sm btn-info"
-                        onClick={() => {/* View details */}}
-                        title="View Details"
-                      >
-                        👁️
-                      </button>
+                         className="btn btn-sm btn-info"
+                         onClick={() => handleViewDetails(request)}
+                         title="View Details"
+                         disabled={buttonLoading[`view-${request._id}`]}
+                       >
+                         {buttonLoading[`view-${request._id}`] ? '⏳' : '👁️'}
+                       </button>
                     </div>
                   </td>
                 </tr>
@@ -627,6 +742,79 @@ const WithdrawalRequestManagement = () => {
                   disabled={actionData.action === 'reject' && !actionData.reason}
                 >
                   {actionData.action === 'approve' ? '✅ Approve' : '❌ Reject'} Request
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {showDetailModal && (
+        <div className="modal-overlay" onClick={() => setShowDetailModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>💰 Withdrawal Request Details</h3>
+              <button onClick={() => setShowDetailModal(false)}>✕</button>
+            </div>
+            <div className="modal-content">
+              <div className="request-details">
+                <div className="detail-row">
+                  <strong>Request ID:</strong> {currentRequest?._id}
+                </div>
+                <div className="detail-row">
+                  <strong>User:</strong> {currentRequest?.user?.firstName} {currentRequest?.user?.lastName}
+                </div>
+                <div className="detail-row">
+                  <strong>Email:</strong> {currentRequest?.user?.email}
+                </div>
+                <div className="detail-row">
+                  <strong>Amount:</strong> ${currentRequest?.amount?.toLocaleString()}
+                </div>
+                <div className="detail-row">
+                  <strong>Method:</strong> {currentRequest?.method}
+                </div>
+                <div className="detail-row">
+                  <strong>Account Details:</strong> {currentRequest?.accountDetails || 'N/A'}
+                </div>
+                <div className="detail-row">
+                  <strong>Priority:</strong> 
+                  <span className={`priority-badge priority-${currentRequest?.priority}`}>
+                    {currentRequest?.priority}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <strong>Status:</strong> 
+                  <span className={`status-badge status-${currentRequest?.status}`}>
+                    {currentRequest?.status}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <strong>Created:</strong> {new Date(currentRequest?.createdAt).toLocaleString()}
+                </div>
+                {currentRequest?.updatedAt && (
+                  <div className="detail-row">
+                    <strong>Updated:</strong> {new Date(currentRequest?.updatedAt).toLocaleString()}
+                  </div>
+                )}
+                {currentRequest?.adminComment && (
+                  <div className="detail-row">
+                    <strong>Admin Comment:</strong> {currentRequest?.adminComment}
+                  </div>
+                )}
+                {currentRequest?.reason && (
+                  <div className="detail-row">
+                    <strong>Reason:</strong> {currentRequest?.reason}
+                  </div>
+                )}
+              </div>
+              
+              <div className="modal-actions">
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => setShowDetailModal(false)}
+                >
+                  Close
                 </button>
               </div>
             </div>

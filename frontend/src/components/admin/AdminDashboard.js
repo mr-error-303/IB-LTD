@@ -18,6 +18,7 @@ import {
   IconButton,
   useTheme,
   ThemeProvider,
+  CircularProgress,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
@@ -46,11 +47,10 @@ import BulkActions from './BulkActions';
 import AdvancedSearch from './AdvancedSearch';
 import './AdminDashboard.css';
 
-const AdminDashboard = () => {
+const AdminDashboard = ({ darkMode = false }) => {
   const { user, logout } = useAuth();
   const { performSecureOperation, getSecurityStatus, sessionLocked } = useAdminSecurity();
   const [activeTab, setActiveTab] = useState('overview');
-  const [darkMode, setDarkMode] = useState(false);
   const [dashboardData, setDashboardData] = useState({
     totalUsers: 0,
     activeUsers: 0,
@@ -84,8 +84,27 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
+  const [buttonLoading, setButtonLoading] = useState({});
   const navigate = useNavigate();
   const theme = useTheme();
+
+  // Enhanced navigation with loading state
+  const handleNavigateWithLoading = async (path, buttonId) => {
+    setButtonLoading(prev => ({ ...prev, [buttonId]: true }));
+    
+    // Immediate visual feedback
+    setTimeout(() => {
+      navigate(path);
+      setButtonLoading(prev => ({ ...prev, [buttonId]: false }));
+    }, 100); // Minimal delay for visual feedback
+  };
+
+  // Enhanced fetch with immediate feedback
+  const handleRefreshWithLoading = async () => {
+    setButtonLoading(prev => ({ ...prev, refresh: true }));
+    await fetchDashboardData();
+    setButtonLoading(prev => ({ ...prev, refresh: false }));
+  };
 
   // Sample data for demonstration
   const sampleStats = {
@@ -347,6 +366,32 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching users:', error);
+    }
+  };
+
+  // Handle card clicks
+  const handleCardClick = (cardType) => {
+    switch (cardType) {
+      case 'Total Users':
+        navigate('/admin/users');
+        break;
+      case 'Active Users':
+        navigate('/admin/users?filter=active');
+        break;
+      case 'Total Balance':
+        navigate('/admin/transactions');
+        break;
+      case 'Transactions Today':
+        navigate('/admin/transactions?filter=today');
+        break;
+      case 'Pending Transactions':
+        navigate('/admin/transactions?filter=pending');
+        break;
+      case 'Security Alerts':
+        navigate('/admin/security/alerts');
+        break;
+      default:
+        console.log('Card clicked:', cardType);
     }
   };
 
@@ -618,16 +663,27 @@ const AdminDashboard = () => {
         </Box>
         <Button
           variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={fetchDashboardData}
-          disabled={loading}
+          startIcon={buttonLoading.refresh ? <CircularProgress size={16} /> : <RefreshIcon />}
+          onClick={handleRefreshWithLoading}
+          disabled={loading || buttonLoading.refresh}
+          sx={{
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              transform: 'translateY(-1px)',
+              boxShadow: 2
+            }
+          }}
         >
-          Refresh
+          {buttonLoading.refresh ? 'Refreshing...' : 'Refresh'}
         </Button>
       </Box>
 
       {/* Dashboard Cards */}
-      <DashboardCards stats={stats} loading={loading} />
+      <DashboardCards 
+        stats={stats} 
+        loading={loading} 
+        onCardClick={handleCardClick}
+      />
 
       {/* System Health */}
       <SystemHealthCards healthData={systemHealth} loading={loading} />
@@ -646,14 +702,16 @@ const AdminDashboard = () => {
             totalCount={recentUsers.length}
             actions={[
               {
-                label: 'View',
-                icon: <SecurityIcon fontSize="small" />,
-                onClick: (user) => console.log('View user:', user.id)
+                label: buttonLoading[`user-view`] ? 'Loading...' : 'View',
+                icon: buttonLoading[`user-view`] ? <CircularProgress size={16} /> : <SecurityIcon fontSize="small" />,
+                onClick: (user) => handleNavigateWithLoading(`/admin/users/${user.id}`, `user-view-${user.id}`),
+                disabled: buttonLoading[`user-view`]
               },
               {
-                label: 'Edit',
-                icon: <RefreshIcon fontSize="small" />,
-                onClick: (user) => console.log('Edit user:', user.id)
+                label: buttonLoading[`user-edit`] ? 'Loading...' : 'Edit',
+                icon: buttonLoading[`user-edit`] ? <CircularProgress size={16} /> : <RefreshIcon fontSize="small" />,
+                onClick: (user) => handleNavigateWithLoading(`/admin/users/${user.id}/edit`, `user-edit-${user.id}`),
+                disabled: buttonLoading[`user-edit`]
               }
             ]}
           />
@@ -670,9 +728,10 @@ const AdminDashboard = () => {
             totalCount={recentTransactions.length}
             actions={[
               {
-                label: 'View Details',
-                icon: <AssessmentIcon fontSize="small" />,
-                onClick: (transaction) => console.log('View transaction:', transaction.id)
+                label: buttonLoading[`transaction-view`] ? 'Loading...' : 'View Details',
+                icon: buttonLoading[`transaction-view`] ? <CircularProgress size={16} /> : <AssessmentIcon fontSize="small" />,
+                onClick: (transaction) => handleNavigateWithLoading(`/admin/transactions/${transaction.id}`, `transaction-view-${transaction.id}`),
+                disabled: buttonLoading[`transaction-view`]
               }
             ]}
           />
@@ -731,11 +790,6 @@ const AdminDashboard = () => {
     </Box>
   );
 
-  // Dark mode toggle handler
-  const handleToggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
-
   return (
     <ThemeProvider theme={darkMode ? adminDarkTheme : adminTheme}>
       <AdminSessionManager>
@@ -746,5 +800,5 @@ const AdminDashboard = () => {
     </ThemeProvider>
   );
 };
-
-export default AdminDashboard;
+  
+  export default AdminDashboard;

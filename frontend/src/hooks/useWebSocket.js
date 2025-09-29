@@ -300,7 +300,7 @@ export const useAdminWebSocket = () => {
     }
   }, []);
 
-  const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:5000/ws/admin`;
+  const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:5001/ws/admin`;
   
   const {
     isConnected,

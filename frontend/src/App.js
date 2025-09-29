@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import SessionManager from './components/SessionManager';
@@ -19,6 +19,19 @@ import AdminProfileSettings from './components/admin/ProfileSettings';
 import AdminSecuritySettings from './components/admin/SecuritySettings';
 import TransactionManagement from './components/admin/TransactionManagement';
 import SecurityAlerts from './components/admin/SecurityAlerts';
+// New admin pages
+import AllUsers from './pages/AllUsers';
+import RoleManagement from './pages/RoleManagement';
+import ActivityLogs from './pages/ActivityLogs';
+import AdminTransactions from './pages/AdminTransactions';
+import Analytics from './pages/Analytics';
+import SecurityOverview from './pages/SecurityOverview';
+import AnomalyDetection from './pages/AnomalyDetection';
+import IPWhitelist from './pages/IPWhitelist';
+import TwoFactorManagement from './pages/TwoFactorManagement';
+import AdminProfileSettingsPage from './pages/AdminProfileSettings';
+import SecuritySettings from './pages/SecuritySettings';
+import SystemSettings from './pages/SystemSettings';
 import Transactions from './pages/Transactions';
 import Deposit from './pages/Deposit';
 import Withdraw from './pages/Withdraw';
@@ -71,6 +84,22 @@ const PublicRoute = ({ children }) => {
 };
 
 function App() {
+  // Dark mode state management
+  const [darkMode, setDarkMode] = useState(() => {
+    const savedMode = localStorage.getItem('adminDarkMode');
+    return savedMode ? JSON.parse(savedMode) : false;
+  });
+
+  // Save dark mode preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('adminDarkMode', JSON.stringify(darkMode));
+  }, [darkMode]);
+
+  // Dark mode toggle handler
+  const handleToggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
   return (
     <AuthProvider>
       <Router>
@@ -111,10 +140,10 @@ function App() {
                   onRemoveNotification={() => {}}
                   connectionStatus="Connected"
                   isConnected={true}
-                  darkMode={false}
-                  onToggleDarkMode={() => {}}
+                  darkMode={darkMode}
+                  onToggleDarkMode={handleToggleDarkMode}
                 >
-                  <AdminDashboard />
+                  <AdminDashboard darkMode={darkMode} />
                 </AdminLayout>
               </AdminSecurityProvider>
             </ProtectedRoute>
@@ -123,34 +152,52 @@ function App() {
             <ProtectedRoute>
               <AdminSecurityProvider>
                 <AdminLayout
-                  title="User Management"
+                  title="All Users"
                   notifications={[]}
                   onClearNotifications={() => {}}
                   onRemoveNotification={() => {}}
                   connectionStatus="Connected"
                   isConnected={true}
-                  darkMode={false}
-                  onToggleDarkMode={() => {}}
+                  darkMode={darkMode}
+                  onToggleDarkMode={handleToggleDarkMode}
                 >
-                  <UserList />
+                  <AllUsers />
                 </AdminLayout>
               </AdminSecurityProvider>
             </ProtectedRoute>
           } />
-          <Route path="/admin/users/:id" element={
+          <Route path="/admin/users/roles" element={
             <ProtectedRoute>
               <AdminSecurityProvider>
                 <AdminLayout
-                  title="User Details"
+                  title="Role Management"
                   notifications={[]}
                   onClearNotifications={() => {}}
                   onRemoveNotification={() => {}}
                   connectionStatus="Connected"
                   isConnected={true}
-                  darkMode={false}
-                  onToggleDarkMode={() => {}}
+                  darkMode={darkMode}
+                  onToggleDarkMode={handleToggleDarkMode}
                 >
-                  <UserDetail />
+                  <RoleManagement />
+                </AdminLayout>
+              </AdminSecurityProvider>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users/activity" element={
+            <ProtectedRoute>
+              <AdminSecurityProvider>
+                <AdminLayout
+                  title="Activity Logs"
+                  notifications={[]}
+                  onClearNotifications={() => {}}
+                  onRemoveNotification={() => {}}
+                  connectionStatus="Connected"
+                  isConnected={true}
+                  darkMode={darkMode}
+                  onToggleDarkMode={handleToggleDarkMode}
+                >
+                  <ActivityLogs />
                 </AdminLayout>
               </AdminSecurityProvider>
             </ProtectedRoute>
@@ -159,16 +206,34 @@ function App() {
             <ProtectedRoute>
               <AdminSecurityProvider>
                 <AdminLayout
-                  title="Transaction Management"
+                  title="Transactions"
                   notifications={[]}
                   onClearNotifications={() => {}}
                   onRemoveNotification={() => {}}
                   connectionStatus="Connected"
                   isConnected={true}
-                  darkMode={false}
-                  onToggleDarkMode={() => {}}
+                  darkMode={darkMode}
+                  onToggleDarkMode={handleToggleDarkMode}
                 >
-                  <TransactionManagement />
+                  <AdminTransactions />
+                </AdminLayout>
+              </AdminSecurityProvider>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/analytics" element={
+            <ProtectedRoute>
+              <AdminSecurityProvider>
+                <AdminLayout
+                  title="Analytics"
+                  notifications={[]}
+                  onClearNotifications={() => {}}
+                  onRemoveNotification={() => {}}
+                  connectionStatus="Connected"
+                  isConnected={true}
+                  darkMode={darkMode}
+                  onToggleDarkMode={handleToggleDarkMode}
+                >
+                  <Analytics />
                 </AdminLayout>
               </AdminSecurityProvider>
             </ProtectedRoute>
@@ -183,10 +248,82 @@ function App() {
                   onRemoveNotification={() => {}}
                   connectionStatus="Connected"
                   isConnected={true}
-                  darkMode={false}
-                  onToggleDarkMode={() => {}}
+                  darkMode={darkMode}
+                  onToggleDarkMode={handleToggleDarkMode}
                 >
                   <SecurityAlerts />
+                </AdminLayout>
+              </AdminSecurityProvider>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/security/overview" element={
+            <ProtectedRoute>
+              <AdminSecurityProvider>
+                <AdminLayout
+                  title="Security Overview"
+                  notifications={[]}
+                  onClearNotifications={() => {}}
+                  onRemoveNotification={() => {}}
+                  connectionStatus="Connected"
+                  isConnected={true}
+                  darkMode={darkMode}
+                  onToggleDarkMode={handleToggleDarkMode}
+                >
+                  <SecurityOverview />
+                </AdminLayout>
+              </AdminSecurityProvider>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/security/anomaly-detection" element={
+            <ProtectedRoute>
+              <AdminSecurityProvider>
+                <AdminLayout
+                  title="Anomaly Detection"
+                  notifications={[]}
+                  onClearNotifications={() => {}}
+                  onRemoveNotification={() => {}}
+                  connectionStatus="Connected"
+                  isConnected={true}
+                  darkMode={darkMode}
+                  onToggleDarkMode={handleToggleDarkMode}
+                >
+                  <AnomalyDetection />
+                </AdminLayout>
+              </AdminSecurityProvider>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/security/ip-whitelist" element={
+            <ProtectedRoute>
+              <AdminSecurityProvider>
+                <AdminLayout
+                  title="IP Whitelist"
+                  notifications={[]}
+                  onClearNotifications={() => {}}
+                  onRemoveNotification={() => {}}
+                  connectionStatus="Connected"
+                  isConnected={true}
+                  darkMode={darkMode}
+                  onToggleDarkMode={handleToggleDarkMode}
+                >
+                  <IPWhitelist />
+                </AdminLayout>
+              </AdminSecurityProvider>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/security/2fa" element={
+            <ProtectedRoute>
+              <AdminSecurityProvider>
+                <AdminLayout
+                  title="2FA Management"
+                  notifications={[]}
+                  onClearNotifications={() => {}}
+                  onRemoveNotification={() => {}}
+                  connectionStatus="Connected"
+                  isConnected={true}
+                  darkMode={darkMode}
+                  onToggleDarkMode={handleToggleDarkMode}
+                >
+                  <TwoFactorManagement />
                 </AdminLayout>
               </AdminSecurityProvider>
             </ProtectedRoute>
@@ -201,10 +338,10 @@ function App() {
                   onRemoveNotification={() => {}}
                   connectionStatus="Connected"
                   isConnected={true}
-                  darkMode={false}
-                  onToggleDarkMode={() => {}}
+                  darkMode={darkMode}
+                  onToggleDarkMode={handleToggleDarkMode}
                 >
-                  <AdminProfileSettings />
+                  <AdminProfileSettingsPage />
                 </AdminLayout>
               </AdminSecurityProvider>
             </ProtectedRoute>
@@ -219,10 +356,28 @@ function App() {
                   onRemoveNotification={() => {}}
                   connectionStatus="Connected"
                   isConnected={true}
-                  darkMode={false}
-                  onToggleDarkMode={() => {}}
+                  darkMode={darkMode}
+                  onToggleDarkMode={handleToggleDarkMode}
                 >
-                  <AdminSecuritySettings />
+                  <SecuritySettings />
+                </AdminLayout>
+              </AdminSecurityProvider>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/settings/system" element={
+            <ProtectedRoute>
+              <AdminSecurityProvider>
+                <AdminLayout
+                  title="System Settings"
+                  notifications={[]}
+                  onClearNotifications={() => {}}
+                  onRemoveNotification={() => {}}
+                  connectionStatus="Connected"
+                  isConnected={true}
+                  darkMode={darkMode}
+                  onToggleDarkMode={handleToggleDarkMode}
+                >
+                  <SystemSettings />
                 </AdminLayout>
               </AdminSecurityProvider>
             </ProtectedRoute>

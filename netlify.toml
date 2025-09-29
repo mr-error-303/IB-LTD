@@ -1,17 +1,13 @@
 [build]
-  publish = "."
+  publish = "customer-portal/build"
+  command = "cd customer-portal && npm run build"
 
 [functions]
   directory = "netlify/functions"
 
 [[redirects]]
-  from = "/api"
-  to = "/.netlify/functions/api"
-  status = 200
-
-[[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/api"
+  to = "/.netlify/functions/api/:splat"
   status = 200
 
 [[redirects]]

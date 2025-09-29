@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAdminSecurity } from './AdminSecurityProvider';
 import { adminAPI } from '../../services/api';
@@ -16,6 +17,7 @@ import './TransactionFiltering.css';
 const TransactionFiltering = () => {
   const { user } = useAuth();
   const { isAuthorized } = useAdminSecurity();
+  const navigate = useNavigate();
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -122,6 +124,22 @@ const TransactionFiltering = () => {
     setCurrentPage(0);
   };
 
+  const handleFlagTransaction = async (transaction) => {
+    try {
+      const response = await adminAPI.post(`/transactions/${transaction.id}/flag`, {
+        reason: 'Flagged for review',
+        flaggedBy: user.id
+      });
+      
+      if (response.data.success) {
+        alert('Transaction flagged successfully');
+        fetchTransactions(); // Refresh the list
+      }
+    } catch (error) {
+      alert('Failed to flag transaction: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
   // DataTable columns configuration
   const transactionColumns = [
     {
@@ -201,17 +219,17 @@ const TransactionFiltering = () => {
     {
       label: 'View Details',
       icon: <ViewIcon fontSize="small" />,
-      onClick: (transaction) => console.log('View transaction:', transaction),
+      onClick: (transaction) => navigate(`/admin/transactions/${transaction.id}`),
     },
     {
       label: 'Edit',
       icon: <EditIcon fontSize="small" />,
-      onClick: (transaction) => console.log('Edit transaction:', transaction),
+      onClick: (transaction) => navigate(`/admin/transactions/${transaction.id}/edit`),
     },
     {
       label: 'Flag',
       icon: <FlagIcon fontSize="small" />,
-      onClick: (transaction) => console.log('Flag transaction:', transaction),
+      onClick: (transaction) => handleFlagTransaction(transaction),
       color: 'warning',
     },
   ];

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useAdminSecurity } from './AdminSecurityProvider';
 import './DepositRequestManagement.css';
@@ -14,6 +14,7 @@ const DepositRequestManagement = () => {
   const [loading, setLoading] = useState(true);
   const [selectedRequests, setSelectedRequests] = useState([]);
   const [showCommentModal, setShowCommentModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [currentRequest, setCurrentRequest] = useState(null);
   const [comment, setComment] = useState('');
   const [filters, setFilters] = useState({
@@ -30,23 +31,37 @@ const DepositRequestManagement = () => {
     totalItems: 0
   });
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [buttonLoading, setButtonLoading] = useState({});
+  const [lastClickTime, setLastClickTime] = useState({});
+
+  // Debounce function to prevent rapid clicks
+  const debounce = useCallback((func, delay, key) => {
+    const now = Date.now();
+    const lastClick = lastClickTime[key] || 0;
+    
+    if (now - lastClick < delay) {
+      return; // Ignore rapid clicks
+    }
+    
+    setLastClickTime(prev => ({ ...prev, [key]: now }));
+    return func();
+  }, [lastClickTime]);
 
   // Fetch deposit requests
-  const fetchDepositRequests = async () => {
+  const fetchDepositRequests = useCallback(async () => {
     try {
       setLoading(true);
-      const params = {
+      const response = await adminAPI.getDepositRequests({
         ...filters,
         page: pagination.currentPage,
         limit: pagination.itemsPerPage
-      };
+      });
       
-      const response = await adminAPI.getDepositRequests(params);
-      setDepositRequests(response.data.requests || []);
-      setFilteredRequests(response.data.requests || []);
+      setDepositRequests(response.data || []);
+      setFilteredRequests(response.data || []);
       setPagination(prev => ({
         ...prev,
-        totalItems: response.data.total || 0
+        totalItems: response.totalItems || 0
       }));
     } catch (error) {
       console.error('Error fetching deposit requests:', error);
@@ -54,56 +69,131 @@ const DepositRequestManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, pagination.currentPage, pagination.itemsPerPage]);
 
-  // Handle request approval
+  // Enhanced approve handler with immediate feedback
   const handleApproveRequest = async (requestId, comment = '') => {
-    try {
-      await performSecureOperation('approve_deposit', async () => {
-        await adminAPI.approveDepositRequest(requestId, { comment });
-        setMessage({ type: 'success', text: 'Deposit request approved successfully' });
-        fetchDepositRequests();
-        setShowCommentModal(false);
-        setComment('');
-      });
-    } catch (error) {
-      console.error('Error approving deposit request:', error);
-      setMessage({ type: 'error', text: 'Failed to approve deposit request' });
-    }
+    const buttonKey = `approve-${requestId}`;
+    
+    return debounce(async () => {
+      setButtonLoading(prev => ({ ...prev, [buttonKey]: true }));
+      
+      try {
+        await performSecureOperation('approve_deposit', async () => {
+          await adminAPI.approveDepositRequest(requestId, { comment });
+          setMessage({ type: 'success', text: 'Deposit request approved successfully' });
+          
+          // Optimistic UI update - remove from pending list immediately
+          setDepositRequests(prev => ({
+            ...prev,
+            data: prev.data.map(req => 
+              req._id === requestId 
+                ? { ...req, status: 'approved', adminComment: comment }
+                : req
+            )
+          }));
+          
+          fetchDepositRequests();
+          setShowCommentModal(false);
+          setComment('');
+        });
+      } catch (error) {
+        console.error('Error approving deposit request:', error);
+        setMessage({ type: 'error', text: 'Failed to approve deposit request' });
+      } finally {
+        setButtonLoading(prev => ({ ...prev, [buttonKey]: false }));
+      }
+    }, 300, buttonKey);
   };
 
-  // Handle request cancellation
+  // Enhanced cancel handler with immediate feedback
   const handleCancelRequest = async (requestId, comment = '') => {
-    try {
-      await performSecureOperation('cancel_deposit', async () => {
-        await adminAPI.cancelDepositRequest(requestId, { comment });
-        setMessage({ type: 'success', text: 'Deposit request cancelled successfully' });
-        fetchDepositRequests();
-        setShowCommentModal(false);
-        setComment('');
-      });
-    } catch (error) {
-      console.error('Error cancelling deposit request:', error);
-      setMessage({ type: 'error', text: 'Failed to cancel deposit request' });
-    }
+    const buttonKey = `cancel-${requestId}`;
+    
+    return debounce(async () => {
+      setButtonLoading(prev => ({ ...prev, [buttonKey]: true }));
+      
+      try {
+        await performSecureOperation('cancel_deposit', async () => {
+          await adminAPI.cancelDepositRequest(requestId, { comment });
+          setMessage({ type: 'success', text: 'Deposit request cancelled successfully' });
+          
+          // Optimistic UI update
+          setDepositRequests(prev => ({
+            ...prev,
+            data: prev.data.map(req => 
+              req._id === requestId 
+                ? { ...req, status: 'cancelled', adminComment: comment }
+                : req
+            )
+          }));
+          
+          fetchDepositRequests();
+          setShowCommentModal(false);
+          setComment('');
+        });
+      } catch (error) {
+        console.error('Error cancelling deposit request:', error);
+        setMessage({ type: 'error', text: 'Failed to cancel deposit request' });
+      } finally {
+        setButtonLoading(prev => ({ ...prev, [buttonKey]: false }));
+      }
+    }, 300, buttonKey);
   };
 
-  // Handle bulk operations
+  // Enhanced view details handler
+  const handleViewDetails = (request) => {
+    const buttonKey = `view-${request._id}`;
+    
+    return debounce(() => {
+      setButtonLoading(prev => ({ ...prev, [buttonKey]: true }));
+      
+      // Immediate UI response
+      setTimeout(() => {
+        setCurrentRequest(request);
+        setShowDetailModal(true);
+        setButtonLoading(prev => ({ ...prev, [buttonKey]: false }));
+      }, 50); // Minimal delay for visual feedback
+    }, 200, buttonKey);
+  };
+
+  // Handle bulk operations with optimistic UI updates
   const handleBulkApprove = async () => {
     if (selectedRequests.length === 0) {
       setMessage({ type: 'warning', text: 'Please select requests to approve' });
       return;
     }
 
+    // Store original state for potential rollback
+    const originalRequests = depositRequests.data;
+    const requestsToUpdate = selectedRequests;
+
     try {
+      // Optimistic UI update - immediately update status
+      setDepositRequests(prev => ({
+        ...prev,
+        data: prev.data.map(req => 
+          requestsToUpdate.includes(req._id) 
+            ? { ...req, status: 'approved' }
+            : req
+        )
+      }));
+      
+      // Clear selection immediately for better UX
+      setSelectedRequests([]);
+      setMessage({ type: 'success', text: `${requestsToUpdate.length} deposit requests approved` });
+
       await performSecureOperation('bulk_approve_deposits', async () => {
-        await adminAPI.bulkApproveDepositRequests({ requestIds: selectedRequests });
-        setMessage({ type: 'success', text: `${selectedRequests.length} deposit requests approved` });
-        setSelectedRequests([]);
+        await adminAPI.bulkApproveDepositRequests({ requestIds: requestsToUpdate });
+        // Refresh data to ensure consistency
         fetchDepositRequests();
       });
     } catch (error) {
       console.error('Error bulk approving deposits:', error);
+      
+      // Rollback optimistic updates on error
+      setDepositRequests(prev => ({ ...prev, data: originalRequests }));
+      setSelectedRequests(requestsToUpdate);
       setMessage({ type: 'error', text: 'Failed to approve selected requests' });
     }
   };
@@ -114,15 +204,36 @@ const DepositRequestManagement = () => {
       return;
     }
 
+    // Store original state for potential rollback
+    const originalRequests = depositRequests.data;
+    const requestsToUpdate = selectedRequests;
+
     try {
+      // Optimistic UI update - immediately update status
+      setDepositRequests(prev => ({
+        ...prev,
+        data: prev.data.map(req => 
+          requestsToUpdate.includes(req._id) 
+            ? { ...req, status: 'cancelled' }
+            : req
+        )
+      }));
+      
+      // Clear selection immediately for better UX
+      setSelectedRequests([]);
+      setMessage({ type: 'success', text: `${requestsToUpdate.length} deposit requests cancelled` });
+
       await performSecureOperation('bulk_cancel_deposits', async () => {
-        await adminAPI.bulkCancelDepositRequests({ requestIds: selectedRequests });
-        setMessage({ type: 'success', text: `${selectedRequests.length} deposit requests cancelled` });
-        setSelectedRequests([]);
+        await adminAPI.bulkCancelDepositRequests({ requestIds: requestsToUpdate });
+        // Refresh data to ensure consistency
         fetchDepositRequests();
       });
     } catch (error) {
       console.error('Error bulk cancelling deposits:', error);
+      
+      // Rollback optimistic updates on error
+      setDepositRequests(prev => ({ ...prev, data: originalRequests }));
+      setSelectedRequests(requestsToUpdate);
       setMessage({ type: 'error', text: 'Failed to cancel selected requests' });
     }
   };
@@ -354,28 +465,31 @@ const DepositRequestManagement = () => {
                       {request.status === 'pending' && (
                         <>
                           <button
-                            className="btn btn-sm btn-success"
-                            onClick={() => openCommentModal(request, 'approve')}
-                            title="Approve Request"
-                          >
-                            ✅
-                          </button>
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => openCommentModal(request, 'cancel')}
-                            title="Cancel Request"
-                          >
-                            ❌
-                          </button>
+                             className="btn btn-sm btn-success"
+                             onClick={() => openCommentModal(request, 'approve')}
+                             disabled={buttonLoading[`approve-${request._id}`]}
+                             title="Approve Request"
+                           >
+                             {buttonLoading[`approve-${request._id}`] ? '⏳' : '✅'}
+                           </button>
+                           <button
+                             className="btn btn-sm btn-danger"
+                             onClick={() => openCommentModal(request, 'cancel')}
+                             disabled={buttonLoading[`cancel-${request._id}`]}
+                             title="Cancel Request"
+                           >
+                             {buttonLoading[`cancel-${request._id}`] ? '⏳' : '❌'}
+                           </button>
                         </>
                       )}
                       <button
-                        className="btn btn-sm btn-info"
-                        onClick={() => {/* View details */}}
-                        title="View Details"
-                      >
-                        👁️
-                      </button>
+                         className="btn btn-sm btn-info"
+                         onClick={() => handleViewDetails(request)}
+                         disabled={buttonLoading[`view-${request._id}`]}
+                         title="View Details"
+                       >
+                         {buttonLoading[`view-${request._id}`] ? '⏳' : '👁️'}
+                       </button>
                     </div>
                   </td>
                 </tr>
@@ -458,6 +572,68 @@ const DepositRequestManagement = () => {
                   onClick={handleCommentSubmit}
                 >
                   {currentRequest?.action === 'approve' ? '✅ Approve' : '❌ Cancel'} Request
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {showDetailModal && (
+        <div className="modal-overlay" onClick={() => setShowDetailModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📋 Deposit Request Details</h3>
+              <button onClick={() => setShowDetailModal(false)}>✕</button>
+            </div>
+            <div className="modal-content">
+              <div className="request-details">
+                <div className="detail-row">
+                  <strong>Request ID:</strong> {currentRequest?._id}
+                </div>
+                <div className="detail-row">
+                  <strong>User:</strong> {currentRequest?.user?.firstName} {currentRequest?.user?.lastName}
+                </div>
+                <div className="detail-row">
+                  <strong>Email:</strong> {currentRequest?.user?.email}
+                </div>
+                <div className="detail-row">
+                  <strong>Amount:</strong> ${currentRequest?.amount?.toLocaleString()}
+                </div>
+                <div className="detail-row">
+                  <strong>Method:</strong> {currentRequest?.method}
+                </div>
+                <div className="detail-row">
+                  <strong>Reference:</strong> {currentRequest?.reference || 'N/A'}
+                </div>
+                <div className="detail-row">
+                  <strong>Status:</strong> 
+                  <span className={`status-badge status-${currentRequest?.status}`}>
+                    {currentRequest?.status}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <strong>Created:</strong> {new Date(currentRequest?.createdAt).toLocaleString()}
+                </div>
+                {currentRequest?.updatedAt && (
+                  <div className="detail-row">
+                    <strong>Updated:</strong> {new Date(currentRequest?.updatedAt).toLocaleString()}
+                  </div>
+                )}
+                {currentRequest?.adminComment && (
+                  <div className="detail-row">
+                    <strong>Admin Comment:</strong> {currentRequest?.adminComment}
+                  </div>
+                )}
+              </div>
+              
+              <div className="modal-actions">
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => setShowDetailModal(false)}
+                >
+                  Close
                 </button>
               </div>
             </div>

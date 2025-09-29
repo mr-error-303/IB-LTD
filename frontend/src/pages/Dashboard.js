@@ -148,14 +148,15 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
-        <div className="container mx-auto px-4 py-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading your dashboard...</p>
-              </div>
+        <div className="container-responsive py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
+              ))}
             </div>
+            <div className="h-64 bg-gray-200 rounded-lg"></div>
           </div>
         </div>
       </div>
@@ -166,30 +167,22 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
-        <div className="container mx-auto px-4 py-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="bg-white rounded-lg shadow-md p-8 text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+        <div className="container-responsive py-8">
+          <div className="alert alert-error">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Connection Error</h3>
+                <p>{error}</p>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to Load Dashboard</h3>
-              <p className="text-gray-600 mb-6">{error}</p>
-              <div className="space-x-4">
-                <button
-                  onClick={handleRetry}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  Try Again
-                </button>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                >
-                  Reload Page
-                </button>
-              </div>
+              <button 
+                onClick={() => {
+                  setRetryCount(0);
+                  fetchDashboardData();
+                }}
+                className="btn-primary"
+              >
+                Try Again
+              </button>
             </div>
           </div>
         </div>
@@ -206,12 +199,12 @@ const Dashboard = () => {
       <main className="mobile-container py-responsive">
         {/* Error Banner */}
         {error && (refreshing || retryCount < 3) && (
-          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 fade-in">
+          <div className="mb-6 alert alert-warning fade-in">
             <div className="flex items-center">
-              <svg className="w-5 h-5 text-yellow-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-5 h-5 text-warning-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
-              <span className="text-yellow-800 text-responsive-sm">{error}</span>
+              <span className="text-warning-800">{error}</span>
             </div>
           </div>
         )}
@@ -219,21 +212,21 @@ const Dashboard = () => {
         {/* Welcome Section */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 space-y-4 sm:space-y-0">
           <div className="slide-up">
-            <h1 className="mobile-heading font-bold text-secondary-900">
+            <h1 className="text-3xl font-bold text-secondary-900">
               Welcome back, {user?.firstName || 'User'}!
             </h1>
-            <p className="text-responsive-sm text-secondary-600 mt-1">
+            <p className="text-secondary-600 mt-1">
               Here's your account overview for today
             </p>
           </div>
         </div>
 
         {/* Account Summary Card */}
-        <div className="card-gradient rounded-xl shadow-lg p-6 mb-6 sm:mb-8 text-white slide-up">
+        <div className="bg-gradient-to-r from-primary-600 to-primary-800 rounded-xl shadow-elevated p-6 mb-6 sm:mb-8 text-white slide-up">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 space-y-4 sm:space-y-0">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-responsive-sm font-medium opacity-90">Current Balance</h2>
+                <h2 className="text-sm font-medium opacity-90">Current Balance</h2>
                 <button
                   onClick={handleRefresh}
                   disabled={refreshing}
@@ -252,7 +245,7 @@ const Dashboard = () => {
                   </span>
                 </button>
               </div>
-              <p className="text-responsive-xl font-bold mt-2 cursor-pointer select-none" onClick={toggleBalanceVisibility}>
+              <p className="text-3xl font-bold mt-2 cursor-pointer select-none" onClick={toggleBalanceVisibility}>
                 {primaryAccount ? (
                   balanceVisible ? formatCurrency(primaryAccount.balance) : '৳ ****.**'
                 ) : 'Loading...'}
@@ -264,22 +257,22 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="text-left sm:text-right">
-              <p className="text-responsive-xs opacity-90">Account Number</p>
-              <p className="text-responsive-sm font-mono mt-1">
+              <p className="text-xs opacity-90">Account Number</p>
+              <p className="text-sm font-mono mt-1">
                 {maskAccountNumber(primaryAccount?.accountNumber)}
               </p>
             </div>
           </div>
           
-          <div className="border-t border-blue-500 pt-4 mt-4">
+          <div className="border-t border-primary-400 pt-4 mt-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <p className="text-responsive-xs opacity-90">Branch</p>
-                <p className="text-responsive-sm font-medium">{primaryAccount?.branch || 'Main Branch'}</p>
+                <p className="text-xs opacity-90">Branch</p>
+                <p className="text-sm font-medium">{primaryAccount?.branch || 'Main Branch'}</p>
               </div>
               <div>
-                <p className="text-responsive-xs opacity-90">Account Type</p>
-                <p className="text-responsive-sm font-medium">{primaryAccount?.accountType || 'Savings'}</p>
+                <p className="text-xs opacity-90">Account Type</p>
+                <p className="text-sm font-medium">{primaryAccount?.accountType || 'Savings'}</p>
               </div>
             </div>
           </div>
@@ -287,58 +280,63 @@ const Dashboard = () => {
 
         {/* Quick Actions */}
         <div className="mb-8">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <h3 className="text-xl font-semibold text-secondary-900 mb-4">Quick Actions</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-4">
-            <Link to="/add-money" className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow text-center">
-              <div className="text-3xl mb-2">💰</div>
-              <p className="text-sm font-medium text-gray-700">Add Money</p>
+            <Link to="/add-money" className="card hover:shadow-card-hover transition-all duration-200 p-4 text-center group">
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-200">💰</div>
+              <p className="text-sm font-medium text-secondary-700">Add Money</p>
             </Link>
             
-            <Link to="/transfer" className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow text-center">
-              <div className="text-3xl mb-2">💸</div>
-              <p className="text-sm font-medium text-gray-700">Transfer Money</p>
+            <Link to="/transfer" className="card hover:shadow-card-hover transition-all duration-200 p-4 text-center group">
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-200">💸</div>
+              <p className="text-sm font-medium text-secondary-700">Transfer Money</p>
             </Link>
             
-            <Link to="/npsb-transfer" className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow text-center">
-              <div className="text-3xl mb-2">🏦</div>
-              <p className="text-sm font-medium text-gray-700">NPSB Transfer</p>
+            <Link to="/mobile-recharge" className="card hover:shadow-card-hover transition-all duration-200 p-4 text-center group">
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-200">📱</div>
+              <p className="text-sm font-medium text-secondary-700">Mobile Recharge</p>
             </Link>
             
-            <Link to="/beftn-transfer" className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow text-center">
-              <div className="text-3xl mb-2">🔄</div>
-              <p className="text-sm font-medium text-gray-700">BEFTN Transfer</p>
+            <Link to="/npsb-transfer" className="card hover:shadow-card-hover transition-all duration-200 p-4 text-center group">
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-200">🏦</div>
+              <p className="text-sm font-medium text-secondary-700">NPSB Transfer</p>
             </Link>
             
-            <Link to="/mobile-wallet-transfer" className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow text-center">
-              <div className="text-3xl mb-2">📱</div>
-              <p className="text-sm font-medium text-gray-700">Mobile Wallet Transfer</p>
+            <Link to="/beftn-transfer" className="card hover:shadow-card-hover transition-all duration-200 p-4 text-center group">
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-200">🔄</div>
+              <p className="text-sm font-medium text-secondary-700">BEFTN Transfer</p>
             </Link>
             
-            <Link to="/qr-payment" className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow text-center">
-              <div className="text-3xl mb-2">📲</div>
-              <p className="text-sm font-medium text-gray-700">QR Pay</p>
+            <Link to="/mobile-wallet-transfer" className="card hover:shadow-card-hover transition-all duration-200 p-4 text-center group">
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-200">💳</div>
+              <p className="text-sm font-medium text-secondary-700">Mobile Wallet Transfer</p>
+            </Link>
+            
+            <Link to="/qr-payment" className="card hover:shadow-card-hover transition-all duration-200 p-4 text-center group">
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-200">📲</div>
+              <p className="text-sm font-medium text-secondary-700">QR Pay</p>
             </Link>
 
-            <Link to="/transactions" className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow text-center">
-              <div className="text-3xl mb-2">📊</div>
-              <p className="text-sm font-medium text-gray-700">Transactions</p>
+            <Link to="/transactions" className="card hover:shadow-card-hover transition-all duration-200 p-4 text-center group">
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-200">📊</div>
+              <p className="text-sm font-medium text-secondary-700">Transactions</p>
             </Link>
 
-            <Link to="/beneficiaries" className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow text-center">
-              <div className="text-3xl mb-2">👥</div>
-              <p className="text-sm font-medium text-gray-700">Beneficiaries</p>
+            <Link to="/beneficiaries" className="card hover:shadow-card-hover transition-all duration-200 p-4 text-center group">
+              <div className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-200">👥</div>
+              <p className="text-sm font-medium text-secondary-700">Beneficiaries</p>
             </Link>
           </div>
         </div>
 
         {/* Transaction History */}
-        <div className="bg-white rounded-lg shadow-md">
-          <div className="p-6 border-b border-gray-200">
+        <div className="card-elevated">
+          <div className="p-6 border-b border-secondary-200">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">Recent Transactions</h3>
+              <h3 className="text-xl font-semibold text-secondary-900">Recent Transactions</h3>
               <button
                 onClick={() => setShowFullHistory(!showFullHistory)}
-                className="text-blue-600 hover:text-blue-800 font-medium"
+                className="text-primary-600 hover:text-primary-800 font-medium transition-colors"
               >
                 {showFullHistory ? 'Show Less' : 'View Full History'}
               </button>
@@ -349,7 +347,7 @@ const Dashboard = () => {
               <select
                 value={transactionFilter}
                 onChange={(e) => setTransactionFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="input-field"
               >
                 <option value="all">All Types</option>
                 <option value="deposit">Deposits</option>

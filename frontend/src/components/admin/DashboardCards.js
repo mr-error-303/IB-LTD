@@ -26,7 +26,7 @@ import {
   MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 
-const DashboardCards = ({ stats, loading = false }) => {
+const DashboardCards = ({ stats, loading = false, onCardClick }) => {
   const theme = useTheme();
 
   const formatCurrency = (amount) => {
@@ -120,11 +120,13 @@ const DashboardCards = ({ stats, loading = false }) => {
           position: 'relative',
           overflow: 'visible',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          cursor: onCardClick ? 'pointer' : 'default',
           '&:hover': {
             transform: 'translateY(-4px)',
             boxShadow: theme.shadows[8],
           },
         }}
+        onClick={() => onCardClick && onCardClick(data.title)}
       >
         <CardContent sx={{ p: 3, pb: '16px !important' }}>
           {/* Header */}

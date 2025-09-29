@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useAdminSecurity } from './AdminSecurityProvider';
 import './TransactionVerification.css';
@@ -11,6 +11,21 @@ const TransactionVerification = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [buttonLoading, setButtonLoading] = useState({});
+  const [lastClickTime, setLastClickTime] = useState({});
+
+  // Debounce function to prevent rapid clicks
+  const debounce = useCallback((func, delay, key) => {
+    const now = Date.now();
+    const lastClick = lastClickTime[key] || 0;
+    
+    if (now - lastClick < delay) {
+      return; // Ignore rapid clicks
+    }
+    
+    setLastClickTime(prev => ({ ...prev, [key]: now }));
+    return func();
+  }, [lastClickTime]);
 
   // Filters state
   const [filters, setFilters] = useState({
@@ -129,6 +144,19 @@ const TransactionVerification = () => {
       setLoading(true);
       setError('');
       
+      // Optimistic UI update - immediately update the transaction status
+      const optimisticStatus = action === 'approve' ? 'approved' : 'rejected';
+      setFlaggedTransactions(prev => 
+        prev.map(transaction => 
+          transaction.id === transactionId 
+            ? { ...transaction, status: optimisticStatus, adminComment: reason }
+            : transaction
+        )
+      );
+      
+      // Remove from selected immediately for better UX
+      setSelectedTransactions(prev => prev.filter(id => id !== transactionId));
+      
       const response = await adminAPI.verifyTransaction({
         transactionId,
         action, // 'approve' or 'reject'
@@ -137,14 +165,28 @@ const TransactionVerification = () => {
       
       if (response.success) {
         setSuccess(`Transaction ${action}d successfully`);
+        // Refresh data to ensure consistency
         fetchFlaggedTransactions();
-        
-        // Remove from selected if it was selected
-        setSelectedTransactions(prev => prev.filter(id => id !== transactionId));
       } else {
+        // Revert optimistic update on failure
+        setFlaggedTransactions(prev => 
+          prev.map(transaction => 
+            transaction.id === transactionId 
+              ? { ...transaction, status: 'pending', adminComment: '' }
+              : transaction
+          )
+        );
         setError(response.message || `Failed to ${action} transaction`);
       }
     } catch (err) {
+      // Revert optimistic update on error
+      setFlaggedTransactions(prev => 
+        prev.map(transaction => 
+          transaction.id === transactionId 
+            ? { ...transaction, status: 'pending', adminComment: '' }
+            : transaction
+        )
+      );
       setError(`Error ${action}ing transaction`);
       console.error(`Transaction ${action} error:`, err);
     } finally {
@@ -165,20 +207,52 @@ const TransactionVerification = () => {
       setLoading(true);
       setError('');
       
+      // Optimistic UI update - immediately update all selected transactions
+      const optimisticStatus = action === 'approve' ? 'approved' : 'rejected';
+      const selectedIds = [...selectedTransactions];
+      
+      setFlaggedTransactions(prev => 
+        prev.map(transaction => 
+          selectedIds.includes(transaction.id)
+            ? { ...transaction, status: optimisticStatus, adminComment: reason }
+            : transaction
+        )
+      );
+      
+      // Clear selection immediately for better UX
+      setSelectedTransactions([]);
+      
       const response = await adminAPI.bulkVerifyTransactions({
-        transactionIds: selectedTransactions,
+        transactionIds: selectedIds,
         action,
         reason
       });
       
       if (response.success) {
-        setSuccess(`${selectedTransactions.length} transactions ${action}d successfully`);
+        setSuccess(`${selectedIds.length} transactions ${action}d successfully`);
+        // Refresh data to ensure consistency
         fetchFlaggedTransactions();
-        setSelectedTransactions([]);
       } else {
+        // Revert optimistic update on failure
+        setFlaggedTransactions(prev => 
+          prev.map(transaction => 
+            selectedIds.includes(transaction.id)
+              ? { ...transaction, status: 'pending', adminComment: '' }
+              : transaction
+          )
+        );
         setError(response.message || `Failed to ${action} transactions`);
       }
     } catch (err) {
+      // Revert optimistic update on error
+      const selectedIds = [...selectedTransactions];
+      setFlaggedTransactions(prev => 
+        prev.map(transaction => 
+          selectedIds.includes(transaction.id)
+            ? { ...transaction, status: 'pending', adminComment: '' }
+            : transaction
+        )
+      );
       setError(`Error performing bulk ${action}`);
       console.error(`Bulk ${action} error:`, err);
     } finally {
@@ -222,6 +296,38 @@ const TransactionVerification = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Enhanced transaction action handler with debouncing
+  const handleTransactionActionWithDebounce = (transactionId, action) => {
+    const buttonKey = `${action}-${transactionId}`;
+    
+    return debounce(() => {
+      setButtonLoading(prev => ({ ...prev, [buttonKey]: true }));
+      
+      const reason = prompt(`Please provide a reason for ${action}:`);
+      if (reason) {
+        handleTransactionAction(transactionId, action, reason);
+      }
+      
+      setTimeout(() => {
+        setButtonLoading(prev => ({ ...prev, [buttonKey]: false }));
+      }, 1000);
+    }, 300, buttonKey);
+  };
+
+  // Enhanced bulk action handler with debouncing
+  const handleBulkActionWithDebounce = (action) => {
+    const buttonKey = `bulk-${action}`;
+    
+    return debounce(() => {
+      setButtonLoading(prev => ({ ...prev, [buttonKey]: true }));
+      
+      setTimeout(() => {
+        handleBulkAction(action);
+        setButtonLoading(prev => ({ ...prev, [buttonKey]: false }));
+      }, 100);
+    }, 300, buttonKey);
   };
 
   const formatCurrency = (amount) => {
@@ -385,21 +491,21 @@ const TransactionVerification = () => {
             {selectedTransactions.length} transaction(s) selected
           </div>
           <div className="bulk-buttons">
-            <button
-              onClick={() => handleBulkAction('approve')}
-              className="btn btn-success"
-              disabled={loading}
-            >
-              Approve Selected
-            </button>
-            <button
-              onClick={() => handleBulkAction('reject')}
-              className="btn btn-danger"
-              disabled={loading}
-            >
-              Reject Selected
-            </button>
-          </div>
+             <button
+               onClick={() => handleBulkActionWithDebounce('approve')}
+               className="btn btn-success"
+               disabled={loading || buttonLoading['bulk-approve']}
+             >
+               {buttonLoading['bulk-approve'] ? '⏳ Processing...' : 'Approve Selected'}
+             </button>
+             <button
+               onClick={() => handleBulkActionWithDebounce('reject')}
+               className="btn btn-danger"
+               disabled={loading || buttonLoading['bulk-reject']}
+             >
+               {buttonLoading['bulk-reject'] ? '⏳ Processing...' : 'Reject Selected'}
+             </button>
+           </div>
         </div>
       )}
 
@@ -470,24 +576,20 @@ const TransactionVerification = () => {
                       {transaction.status === 'pending' ? (
                         <div className="action-buttons">
                           <button
-                            onClick={() => {
-                              const reason = prompt('Please provide a reason for approval:');
-                              if (reason) handleTransactionAction(transaction.id, 'approve', reason);
-                            }}
+                            onClick={() => handleTransactionActionWithDebounce(transaction.id, 'approve')}
                             className="btn btn-success btn-sm"
-                            disabled={loading}
+                            disabled={loading || buttonLoading[`approve-${transaction.id}`]}
                           >
-                            Approve
+                            {buttonLoading[`approve-${transaction.id}`] ? '⏳' : '✅'} 
+                            {buttonLoading[`approve-${transaction.id}`] ? 'Processing...' : 'Approve'}
                           </button>
                           <button
-                            onClick={() => {
-                              const reason = prompt('Please provide a reason for rejection:');
-                              if (reason) handleTransactionAction(transaction.id, 'reject', reason);
-                            }}
+                            onClick={() => handleTransactionActionWithDebounce(transaction.id, 'reject')}
                             className="btn btn-danger btn-sm"
-                            disabled={loading}
+                            disabled={loading || buttonLoading[`reject-${transaction.id}`]}
                           >
-                            Reject
+                            {buttonLoading[`reject-${transaction.id}`] ? '⏳' : '❌'} 
+                            {buttonLoading[`reject-${transaction.id}`] ? 'Processing...' : 'Reject'}
                           </button>
                         </div>
                       ) : (

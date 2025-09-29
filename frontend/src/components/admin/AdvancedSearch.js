@@ -74,6 +74,20 @@ const AdvancedSearch = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
+  // Button loading states for debouncing
+  const [buttonLoading, setButtonLoading] = useState({});
+  const [lastClickTime, setLastClickTime] = useState({});
+  
+  // Debounce function to prevent rapid clicks
+  const debounce = (func, delay, key) => {
+    const now = Date.now();
+    if (lastClickTime[key] && now - lastClickTime[key] < delay) {
+      return;
+    }
+    setLastClickTime(prev => ({ ...prev, [key]: now }));
+    return func();
+  };
+  
   // Search results
   const [searchResults, setSearchResults] = useState({
     users: [],
@@ -126,6 +140,7 @@ const AdvancedSearch = () => {
   const [savedSearches, setSavedSearches] = useState([]);
   const [recentSearches, setRecentSearches] = useState([]);
   const [saveSearchDialog, setSaveSearchDialog] = useState(false);
+  const [recentSearchDialog, setRecentSearchDialog] = useState(false);
   const [searchName, setSearchName] = useState('');
   const [searchDescription, setSearchDescription] = useState('');
 
@@ -175,6 +190,34 @@ const AdvancedSearch = () => {
     } catch (err) {
       console.error('Failed to fetch recent searches:', err);
     }
+  };
+
+  // Enhanced search handler with debouncing
+  const handleSearchWithDebounce = (tabIndex = activeTab, page = 1) => {
+    const buttonKey = `search-${tabIndex}-${page}`;
+    
+    return debounce(() => {
+      setButtonLoading(prev => ({ ...prev, [buttonKey]: true }));
+      
+      setTimeout(async () => {
+        await handleSearch(tabIndex, page);
+        setButtonLoading(prev => ({ ...prev, [buttonKey]: false }));
+      }, 100);
+    }, 300, buttonKey);
+  };
+
+  // Enhanced clear filters handler with debouncing
+  const handleClearFiltersWithDebounce = () => {
+    const buttonKey = 'clear-filters';
+    
+    return debounce(() => {
+      setButtonLoading(prev => ({ ...prev, [buttonKey]: true }));
+      
+      setTimeout(() => {
+        handleClearFilters();
+        setButtonLoading(prev => ({ ...prev, [buttonKey]: false }));
+      }, 100);
+    }, 300, buttonKey);
   };
 
   const handleSearch = async (tabIndex = activeTab, page = 1) => {
@@ -787,7 +830,7 @@ const AdvancedSearch = () => {
             <Pagination
               count={paginationInfo.totalPages}
               page={paginationInfo.page}
-              onChange={(e, page) => handleSearch(activeTab, page)}
+              onChange={(e, page) => handleSearchWithDebounce(activeTab, page)}
             />
           </Box>
         )}
@@ -826,7 +869,7 @@ const AdvancedSearch = () => {
           <Button
             variant="outlined"
             startIcon={<HistoryIcon />}
-            onClick={() => {/* Open recent searches */}}
+            onClick={() => setRecentSearchDialog(true)}
           >
             Recent Searches
           </Button>
@@ -962,25 +1005,26 @@ const AdvancedSearch = () => {
                 <Button
                   variant="contained"
                   startIcon={<SearchIcon />}
-                  onClick={() => handleSearch()}
-                  disabled={loading}
+                  onClick={() => handleSearchWithDebounce()}
+                  disabled={loading || buttonLoading[`search-${activeTab}-1`]}
                 >
-                  {loading ? 'Searching...' : 'Search'}
+                  {buttonLoading[`search-${activeTab}-1`] ? '⏳ Searching...' : loading ? 'Searching...' : 'Search'}
                 </Button>
                 <Button
                   variant="outlined"
                   startIcon={<ClearIcon />}
-                  onClick={handleClearFilters}
+                  onClick={handleClearFiltersWithDebounce}
+                  disabled={buttonLoading['clear-filters']}
                 >
-                  Clear Filters
+                  {buttonLoading['clear-filters'] ? '⏳ Clearing...' : 'Clear Filters'}
                 </Button>
                 <Button
                   variant="outlined"
                   startIcon={<RefreshIcon />}
-                  onClick={() => handleSearch()}
-                  disabled={loading}
+                  onClick={() => handleSearchWithDebounce()}
+                  disabled={loading || buttonLoading[`search-${activeTab}-1`]}
                 >
-                  Refresh
+                  {buttonLoading[`search-${activeTab}-1`] ? '⏳ Refreshing...' : loading ? 'Refreshing...' : 'Refresh'}
                 </Button>
               </Box>
 
@@ -1026,6 +1070,67 @@ const AdvancedSearch = () => {
           <Button onClick={handleSaveSearch} variant="contained">
             Save Search
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Recent Searches Dialog */}
+      <Dialog 
+        open={recentSearchDialog} 
+        onClose={() => setRecentSearchDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Recent Searches</DialogTitle>
+        <DialogContent>
+          {recentSearches.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+              No recent searches found.
+            </Typography>
+          ) : (
+            <List>
+              {recentSearches.map((search, index) => (
+                <React.Fragment key={index}>
+                  <ListItem>
+                    <ListItemIcon>
+                      <SearchIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={search.name || `Search ${index + 1}`}
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            {search.description || 'No description'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(search.timestamp).toLocaleString()}
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                    <ListItemSecondaryAction>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          // Load the search filters
+                          if (search.filters) {
+                            setFilters(search.filters);
+                            setActiveTab(search.activeTab || 0);
+                          }
+                          setRecentSearchDialog(false);
+                        }}
+                      >
+                        Load
+                      </Button>
+                    </ListItemSecondaryAction>
+                  </ListItem>
+                  {index < recentSearches.length - 1 && <Divider />}
+                </React.Fragment>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRecentSearchDialog(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -1,35 +1,115 @@
-exports.handler = async (event, context) => {
-  // Set CORS headers
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Content-Type': 'application/json'
-  };
+const express = require('express');
+const serverless = require('serverless-http');
 
-  // Handle preflight requests
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: ''
-    };
+const app = express();
+
+// Middleware
+app.use(express.json());
+
+// CORS middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
   }
+});
 
-  // Create response data
-  const responseData = {
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
     message: 'IB LTD API is working!',
-    status: 'success',
     timestamp: new Date().toISOString(),
-    method: event.httpMethod,
-    url: event.path,
     version: '12.0.0',
     platform: 'Netlify'
-  };
+  });
+});
 
-  return {
-    statusCode: 200,
-    headers,
-    body: JSON.stringify(responseData, null, 2)
-  };
-};
+// Auth routes
+app.post('/api/auth/login', (req, res) => {
+  const { email, password } = req.body;
+  
+  // Mock authentication - replace with real authentication logic
+  if (email === 'admin@example.com' && password === 'admin123') {
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token: 'mock-jwt-token',
+      user: {
+        id: 1,
+        email: 'admin@example.com',
+        role: 'admin',
+        name: 'Admin User'
+      }
+    });
+  } else if (email === 'user@example.com' && password === 'user123') {
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token: 'mock-jwt-token',
+      user: {
+        id: 2,
+        email: 'user@example.com',
+        role: 'user',
+        name: 'Regular User'
+      }
+    });
+  } else {
+    res.status(401).json({
+      success: false,
+      message: 'Invalid credentials'
+    });
+  }
+});
+
+// Admin auth routes
+app.post('/api/admin/auth/login', (req, res) => {
+  const { email, password, adminKey } = req.body;
+  
+  // Mock admin authentication with admin key validation
+  const validAdminCredentials = [
+    { email: 'admin@example.com', password: 'admin123', adminKey: 'admin123' },
+    { email: 'admin@ibltd.com', password: 'admin123', adminKey: 'admin123' },
+    { email: 'admin', password: 'admin123', adminKey: 'admin123' }
+  ];
+
+  const isValidAdmin = validAdminCredentials.some(admin => 
+    admin.email === email && 
+    admin.password === password && 
+    admin.adminKey === adminKey
+  );
+
+  if (isValidAdmin) {
+    res.json({
+      success: true,
+      message: 'Admin login successful',
+      token: 'mock-admin-jwt-token',
+      user: {
+        id: 1,
+        email: email,
+        role: 'admin',
+        name: 'Admin User'
+      }
+    });
+  } else {
+    res.status(401).json({
+      success: false,
+      message: 'Invalid admin credentials'
+    });
+  }
+});
+
+// Catch all other routes
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
+});
+
+module.exports.handler = serverless(app);

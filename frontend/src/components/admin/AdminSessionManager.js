@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const AdminSessionManager = ({ children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [sessionTimeout, setSessionTimeout] = useState(15); // Admin sessions: 15 minutes
   const [warningShown, setWarningShown] = useState(false);
   const [timeoutId, setTimeoutId] = useState(null);
@@ -224,22 +225,27 @@ const AdminSessionManager = ({ children }) => {
     return <>{children}</>;
   }
 
+  // Check if user is on admin panel routes
+  const isOnAdminPanel = location.pathname.startsWith('/admin');
+
   return (
     <div className="admin-session-wrapper">
-      {/* Security indicator */}
-      <div className="admin-security-indicator" style={{
-        position: 'fixed',
-        top: 0,
-        right: 0,
-        background: '#dc3545',
-        color: 'white',
-        padding: '4px 8px',
-        fontSize: '12px',
-        zIndex: 9999,
-        borderBottomLeftRadius: '4px'
-      }}>
-        🔒 Admin Session Active
-      </div>
+      {/* Security indicator - only show when NOT on admin panel */}
+      {!isOnAdminPanel && (
+        <div className="admin-security-indicator" style={{
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          background: '#dc3545',
+          color: 'white',
+          padding: '4px 8px',
+          fontSize: '12px',
+          zIndex: 9999,
+          borderBottomLeftRadius: '4px'
+        }}>
+          🔒 Admin Session Active
+        </div>
+      )}
       
       {children}
     </div>

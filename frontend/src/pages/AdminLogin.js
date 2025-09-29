@@ -94,7 +94,7 @@ const AdminLogin = () => {
             
             // Update auth context with user data
             try {
-              const userResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/auth/me`, {
+              const userResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/auth/me`, {
                 headers: {
                   'Authorization': `Bearer ${data.token}`
                 }
@@ -112,7 +112,7 @@ const AdminLogin = () => {
         }
       } else {
         // Second step: two-factor authentication
-        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/admin/auth/verify-2fa`, {
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/admin/auth/verify-2fa`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -130,7 +130,7 @@ const AdminLogin = () => {
           localStorage.setItem('token', data.token);
           
           // Update auth context with user data
-          const userResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/auth/me`, {
+          const userResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/auth/me`, {
             headers: {
               'Authorization': `Bearer ${data.token}`
             }

@@ -262,7 +262,7 @@ const ProfileSettings = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-secondary-50">
+      <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
         <Header />
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -272,38 +272,38 @@ const ProfileSettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <Header />
       
       <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-secondary-900">Profile Settings</h1>
-            <p className="mt-1 text-sm text-secondary-600">
+            <h1 className="text-2xl font-bold text-secondary-900 dark:text-secondary-100">Profile Settings</h1>
+            <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">
               Manage your account information and preferences
             </p>
           </div>
 
           {/* Messages */}
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
               <div className="flex">
                 <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
-                <p className="ml-3 text-red-600">{error}</p>
+                <p className="ml-3 text-red-600 dark:text-red-200">{error}</p>
               </div>
             </div>
           )}
 
           {success && (
-            <div className="mb-6 bg-green-50 border border-green-200 rounded-md p-4">
+            <div className="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-4">
               <div className="flex">
                 <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                <p className="ml-3 text-green-600">{success}</p>
+                <p className="ml-3 text-green-600 dark:text-green-200">{success}</p>
               </div>
             </div>
           )}
@@ -316,8 +316,8 @@ const ProfileSettings = () => {
                   onClick={() => setActiveTab('profile')}
                   className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeTab === 'profile'
-                      ? 'bg-primary-100 text-primary-700 border-l-4 border-primary-500'
-                      : 'text-secondary-600 hover:text-secondary-900 hover:bg-secondary-50'
+                      ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border-l-4 border-primary-500'
+                      : 'text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-800'
                   }`}
                 >
                   <div className="flex items-center">
@@ -332,8 +332,8 @@ const ProfileSettings = () => {
                   onClick={() => setActiveTab('security')}
                   className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeTab === 'security'
-                      ? 'bg-primary-100 text-primary-700 border-l-4 border-primary-500'
-                      : 'text-secondary-600 hover:text-secondary-900 hover:bg-secondary-50'
+                      ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border-l-4 border-primary-500'
+                      : 'text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-800'
                   }`}
                 >
                   <div className="flex items-center">
@@ -348,8 +348,8 @@ const ProfileSettings = () => {
                   onClick={() => setActiveTab('preferences')}
                   className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeTab === 'preferences'
-                      ? 'bg-primary-100 text-primary-700 border-l-4 border-primary-500'
-                      : 'text-secondary-600 hover:text-secondary-900 hover:bg-secondary-50'
+                      ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border-l-4 border-primary-500'
+                      : 'text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-secondary-200 hover:bg-secondary-50 dark:hover:bg-secondary-800'
                   }`}
                 >
                   <div className="flex items-center">
@@ -367,10 +367,10 @@ const ProfileSettings = () => {
             <div className="lg:col-span-3">
               {/* Profile Information Tab */}
               {activeTab === 'profile' && (
-                <div className="card p-6">
+                <div className="card bg-white dark:bg-secondary-800 p-6 rounded-lg shadow-sm border border-secondary-200 dark:border-secondary-700">
                   <div className="mb-6">
-                    <h2 className="text-lg font-medium text-secondary-900">Profile Information</h2>
-                    <p className="mt-1 text-sm text-secondary-600">
+                    <h2 className="text-lg font-medium text-secondary-900 dark:text-secondary-100">Profile Information</h2>
+                    <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">
                       Update your personal information and contact details.
                     </p>
                   </div>
@@ -378,7 +378,7 @@ const ProfileSettings = () => {
                   <form onSubmit={handleProfileSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-secondary-700">
+                        <label htmlFor="name" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">
                           Full Name
                         </label>
                         <input
@@ -387,13 +387,13 @@ const ProfileSettings = () => {
                           name="name"
                           value={profileData.name}
                           onChange={handleProfileChange}
-                          className="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                          className="mt-1 block w-full px-3 py-2 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                           placeholder="Enter your full name"
                         />
                       </div>
 
                       <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-secondary-700">
+                        <label htmlFor="email" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">
                           Email Address
                         </label>
                         <input
@@ -402,28 +402,28 @@ const ProfileSettings = () => {
                           name="email"
                           value={profileData.email}
                           onChange={handleProfileChange}
-                          className="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                          className="mt-1 block w-full px-3 py-2 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                           placeholder="Enter your email address"
                         />
                       </div>
                     </div>
 
                     {/* Account Information (Read-only) */}
-                    <div className="border-t border-secondary-200 pt-6">
-                      <h3 className="text-md font-medium text-secondary-900 mb-4">Account Information</h3>
+                    <div className="border-t border-secondary-200 dark:border-secondary-700 pt-6">
+                      <h3 className="text-md font-medium text-secondary-900 dark:text-secondary-100 mb-4">Account Information</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-medium text-secondary-700">Account Role</label>
-                          <div className="mt-1 px-3 py-2 bg-secondary-50 border border-secondary-200 rounded-md">
-                            <span className="capitalize text-secondary-900">{user?.role || 'User'}</span>
+                          <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">Account Role</label>
+                          <div className="mt-1 px-3 py-2 bg-secondary-50 dark:bg-secondary-700 border border-secondary-200 dark:border-secondary-600 rounded-md">
+                            <span className="capitalize text-secondary-900 dark:text-secondary-100">{user?.role || 'User'}</span>
                           </div>
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-secondary-700">Account Status</label>
-                          <div className="mt-1 px-3 py-2 bg-secondary-50 border border-secondary-200 rounded-md">
+                          <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">Account Status</label>
+                          <div className="mt-1 px-3 py-2 bg-secondary-50 dark:bg-secondary-700 border border-secondary-200 dark:border-secondary-600 rounded-md">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              user?.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              user?.isActive ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
                             }`}>
                               {user?.isActive ? 'Active' : 'Inactive'}
                             </span>
@@ -431,18 +431,18 @@ const ProfileSettings = () => {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-secondary-700">Member Since</label>
-                          <div className="mt-1 px-3 py-2 bg-secondary-50 border border-secondary-200 rounded-md">
-                            <span className="text-secondary-900">
+                          <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">Member Since</label>
+                          <div className="mt-1 px-3 py-2 bg-secondary-50 dark:bg-secondary-700 border border-secondary-200 dark:border-secondary-600 rounded-md">
+                            <span className="text-secondary-900 dark:text-secondary-100">
                               {user?.createdAt ? formatDate(user.createdAt) : 'N/A'}
                             </span>
                           </div>
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-secondary-700">Last Updated</label>
-                          <div className="mt-1 px-3 py-2 bg-secondary-50 border border-secondary-200 rounded-md">
-                            <span className="text-secondary-900">
+                          <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">Last Updated</label>
+                          <div className="mt-1 px-3 py-2 bg-secondary-50 dark:bg-secondary-700 border border-secondary-200 dark:border-secondary-600 rounded-md">
+                            <span className="text-secondary-900 dark:text-secondary-100">
                               {user?.updatedAt ? formatDate(user.updatedAt) : 'N/A'}
                             </span>
                           </div>
@@ -475,17 +475,17 @@ const ProfileSettings = () => {
 
               {/* Security Tab */}
               {activeTab === 'security' && (
-                <div className="card p-6">
+                <div className="card bg-white dark:bg-secondary-800 p-6 rounded-lg shadow-sm border border-secondary-200 dark:border-secondary-700">
                   <div className="mb-6">
-                    <h2 className="text-lg font-medium text-secondary-900">Security Settings</h2>
-                    <p className="mt-1 text-sm text-secondary-600">
+                    <h2 className="text-lg font-medium text-secondary-900 dark:text-secondary-100">Security Settings</h2>
+                    <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">
                       Manage your password and security preferences.
                     </p>
                   </div>
 
                   <form onSubmit={handlePasswordSubmit} className="space-y-6">
                     <div>
-                      <label htmlFor="currentPassword" className="block text-sm font-medium text-secondary-700">
+                      <label htmlFor="currentPassword" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">
                         Current Password
                       </label>
                       <input
@@ -494,14 +494,14 @@ const ProfileSettings = () => {
                         name="currentPassword"
                         value={passwordData.currentPassword}
                         onChange={handlePasswordChange}
-                        className="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                        className="mt-1 block w-full px-3 py-2 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                         placeholder="Enter your current password"
                       />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label htmlFor="newPassword" className="block text-sm font-medium text-secondary-700">
+                        <label htmlFor="newPassword" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">
                           New Password
                         </label>
                         <input
@@ -510,13 +510,13 @@ const ProfileSettings = () => {
                           name="newPassword"
                           value={passwordData.newPassword}
                           onChange={handlePasswordChange}
-                          className="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                          className="mt-1 block w-full px-3 py-2 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                           placeholder="Enter new password"
                         />
                       </div>
 
                       <div>
-                        <label htmlFor="confirmPassword" className="block text-sm font-medium text-secondary-700">
+                        <label htmlFor="confirmPassword" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">
                           Confirm New Password
                         </label>
                         <input
@@ -525,19 +525,19 @@ const ProfileSettings = () => {
                           name="confirmPassword"
                           value={passwordData.confirmPassword}
                           onChange={handlePasswordChange}
-                          className="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                          className="mt-1 block w-full px-3 py-2 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                           placeholder="Confirm new password"
                         />
                       </div>
                     </div>
 
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                    <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-md p-4">
                       <div className="flex">
-                        <svg className="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="h-5 w-5 text-yellow-400 dark:text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
                         <div className="ml-3">
-                          <p className="text-sm text-yellow-700">
+                          <p className="text-sm text-yellow-700 dark:text-yellow-200">
                             <strong>Password Requirements:</strong> Your password must be at least 6 characters long and contain a mix of letters, numbers, and special characters for better security.
                           </p>
                         </div>
@@ -711,10 +711,10 @@ const ProfileSettings = () => {
 
               {/* Preferences Tab */}
               {activeTab === 'preferences' && (
-                <div className="card p-6">
+                <div className="card bg-white dark:bg-secondary-800 p-6 rounded-lg shadow-sm border border-secondary-200 dark:border-secondary-700">
                   <div className="mb-6">
-                    <h2 className="text-lg font-medium text-secondary-900">Account Preferences</h2>
-                    <p className="mt-1 text-sm text-secondary-600">
+                    <h2 className="text-lg font-medium text-secondary-900 dark:text-secondary-100">Account Preferences</h2>
+                    <p className="mt-1 text-sm text-secondary-600 dark:text-secondary-400">
                       Customize your account settings and notification preferences.
                     </p>
                   </div>
@@ -722,14 +722,14 @@ const ProfileSettings = () => {
                   <form onSubmit={handlePreferencesSubmit} className="space-y-6">
                     {/* Notification Settings */}
                     <div>
-                      <h3 className="text-md font-medium text-secondary-900 mb-4">Notifications</h3>
+                      <h3 className="text-md font-medium text-secondary-900 dark:text-secondary-100 mb-4">Notifications</h3>
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <label htmlFor="emailNotifications" className="text-sm font-medium text-secondary-700">
+                            <label htmlFor="emailNotifications" className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
                               Email Notifications
                             </label>
-                            <p className="text-sm text-secondary-500">Receive transaction alerts and account updates via email</p>
+                            <p className="text-sm text-secondary-500 dark:text-secondary-400">Receive transaction alerts and account updates via email</p>
                           </div>
                           <input
                             type="checkbox"
@@ -737,16 +737,16 @@ const ProfileSettings = () => {
                             name="emailNotifications"
                             checked={preferences.emailNotifications}
                             onChange={handlePreferenceChange}
-                            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded"
+                            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 dark:border-secondary-600 rounded"
                           />
                         </div>
 
                         <div className="flex items-center justify-between">
                           <div>
-                            <label htmlFor="smsNotifications" className="text-sm font-medium text-secondary-700">
+                            <label htmlFor="smsNotifications" className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
                               SMS Notifications
                             </label>
-                            <p className="text-sm text-secondary-500">Receive important alerts via text message</p>
+                            <p className="text-sm text-secondary-500 dark:text-secondary-400">Receive important alerts via text message</p>
                           </div>
                           <input
                             type="checkbox"
@@ -754,22 +754,22 @@ const ProfileSettings = () => {
                             name="smsNotifications"
                             checked={preferences.smsNotifications}
                             onChange={handlePreferenceChange}
-                            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded"
+                            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 dark:border-secondary-600 rounded"
                           />
                         </div>
                       </div>
                     </div>
 
                     {/* Security Settings */}
-                    <div className="border-t border-secondary-200 pt-6">
-                      <h3 className="text-md font-medium text-secondary-900 mb-4">Security</h3>
+                    <div className="border-t border-secondary-200 dark:border-secondary-700 pt-6">
+                      <h3 className="text-md font-medium text-secondary-900 dark:text-secondary-100 mb-4">Security</h3>
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <label htmlFor="twoFactorAuth" className="text-sm font-medium text-secondary-700">
+                            <label htmlFor="twoFactorAuth" className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
                               Two-Factor Authentication
                             </label>
-                            <p className="text-sm text-secondary-500">Add an extra layer of security to your account</p>
+                            <p className="text-sm text-secondary-500 dark:text-secondary-400">Add an extra layer of security to your account</p>
                           </div>
                           <input
                             type="checkbox"
@@ -777,12 +777,12 @@ const ProfileSettings = () => {
                             name="twoFactorAuth"
                             checked={preferences.twoFactorAuth}
                             onChange={handlePreferenceChange}
-                            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded"
+                            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 dark:border-secondary-600 rounded"
                           />
                         </div>
 
                         <div>
-                          <label htmlFor="sessionTimeout" className="block text-sm font-medium text-secondary-700">
+                          <label htmlFor="sessionTimeout" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">
                             Session Timeout
                           </label>
                           <select
@@ -790,7 +790,7 @@ const ProfileSettings = () => {
                             name="sessionTimeout"
                             value={preferences.sessionTimeout}
                             onChange={handlePreferenceChange}
-                            className="mt-1 block w-full px-3 py-2 border border-secondary-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                            className="mt-1 block w-full px-3 py-2 border border-secondary-300 dark:border-secondary-600 bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                           >
                             <option value="15">15 minutes</option>
                             <option value="30">30 minutes</option>
@@ -798,7 +798,7 @@ const ProfileSettings = () => {
                             <option value="120">2 hours</option>
                             <option value="480">8 hours</option>
                           </select>
-                          <p className="mt-1 text-sm text-secondary-500">
+                          <p className="mt-1 text-sm text-secondary-500 dark:text-secondary-400">
                             Automatically log out after this period of inactivity
                           </p>
                         </div>
