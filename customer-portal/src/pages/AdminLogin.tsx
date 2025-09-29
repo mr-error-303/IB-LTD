@@ -74,7 +74,9 @@ const AdminLogin: React.FC = () => {
 
         // Store admin user in localStorage
         localStorage.setItem('bankingUser', JSON.stringify(adminUser));
-        navigate('/admin');
+        
+        // Force navigation using window.location instead of navigate
+        window.location.href = '/admin';
       } else {
         setError('Invalid admin credentials. Please check username, password, and admin key.');
       }
