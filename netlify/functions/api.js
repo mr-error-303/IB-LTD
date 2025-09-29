@@ -78,11 +78,16 @@ app.post('/api/admin/auth/login', (req, res) => {
     { email: 'admin', password: 'admin123', adminKey: 'admin123' }
   ];
 
+  console.log('Admin login attempt:', { email, password, adminKey });
+  console.log('Valid credentials:', validAdminCredentials);
+
   const isValidAdmin = validAdminCredentials.some(admin => 
     admin.email === email && 
     admin.password === password && 
     admin.adminKey === adminKey
   );
+
+  console.log('Is valid admin:', isValidAdmin);
 
   if (isValidAdmin) {
     res.json({
