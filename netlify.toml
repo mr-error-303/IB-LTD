@@ -3,6 +3,9 @@
   publish = "customer-portal/build"
   functions = "netlify/functions"
 
+[build.environment]
+  REACT_APP_API_URL = "https://international-bank-limited.netlify.app/api"
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"

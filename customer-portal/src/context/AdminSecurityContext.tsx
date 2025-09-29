@@ -105,8 +105,11 @@ const AdminSecurityProvider: React.FC<AdminSecurityProviderProps> = ({ children 
   // Verify admin credentials for sensitive operations
   const verifyAdminCredentials = useCallback(async (password: string, operation: string) => {
     try {
+      // Get API base URL from environment or use default
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://ib-ltd-admin.netlify.app/api';
+      
       // Simulate API call - in production this would be a real endpoint
-      const response = await fetch('/api/auth/admin/verify-credentials', {
+      const response = await fetch(`${API_BASE_URL}/auth/admin/verify-credentials`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
