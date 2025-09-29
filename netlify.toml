@@ -1,6 +1,6 @@
 [build]
-  command = "npm run build"
-  publish = "build"
+  command = "cd customer-portal && npm run build"
+  publish = "customer-portal/build"
   functions = "netlify/functions"
 
 [[redirects]]
