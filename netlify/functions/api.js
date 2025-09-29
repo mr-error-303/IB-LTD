@@ -90,13 +90,32 @@ app.post('/api/admin/auth/login', (req, res) => {
     adminKey: normalizedAdminKey 
   });
 
-  const isValidAdmin = validAdminCredentials.some(admin => 
-    admin.email.toLowerCase() === normalizedEmail && 
-    admin.password === normalizedPassword && 
-    admin.adminKey === normalizedAdminKey
-  );
+  console.log('Valid credentials array:', validAdminCredentials.map(admin => ({
+    email: admin.email,
+    emailLower: admin.email.toLowerCase(),
+    password: admin.password,
+    adminKey: admin.adminKey
+  })));
 
-  console.log('Is valid admin:', isValidAdmin);
+  const isValidAdmin = validAdminCredentials.some((admin, index) => {
+    const emailMatch = admin.email.toLowerCase() === normalizedEmail;
+    const passwordMatch = admin.password === normalizedPassword;
+    const adminKeyMatch = admin.adminKey === normalizedAdminKey;
+    
+    console.log(`Credential ${index} check:`, {
+      adminEmail: admin.email,
+      adminEmailLower: admin.email.toLowerCase(),
+      normalizedEmail,
+      emailMatch,
+      passwordMatch,
+      adminKeyMatch,
+      allMatch: emailMatch && passwordMatch && adminKeyMatch
+    });
+    
+    return emailMatch && passwordMatch && adminKeyMatch;
+  });
+
+  console.log('Final validation result:', isValidAdmin);
 
   if (isValidAdmin) {
     res.json({
