@@ -25,47 +25,55 @@ const AdminLogin: React.FC = () => {
     setError('');
 
     try {
-      // Use client-side authentication for both development and production
-      // Valid admin credentials
-      const validCredentials = [
-        { email: 'admin@example.com', password: 'admin123', adminKey: 'admin123' },
-        { email: 'admin@ibltd.com', password: 'admin123', adminKey: 'admin123' },
-        { email: 'admin', password: 'admin123', adminKey: 'admin123' }
-      ];
+      // Get API base URL from environment
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://international-bank-limited.netlify.app/api';
+      
+      console.log('🌐 Using API Base URL:', API_BASE_URL);
+      
+      // Prepare login data
+      const loginData = {
+        email: credentials.username,
+        password: credentials.password,
+        adminKey: credentials.adminKey
+      };
 
-      // Normalize inputs
-      const normalizedEmail = credentials.username ? credentials.username.toLowerCase().trim() : '';
-      const normalizedPassword = credentials.password ? credentials.password.trim() : '';
-      const normalizedAdminKey = credentials.adminKey ? credentials.adminKey.trim() : '';
-
-      console.log('Admin login attempt:', {
-        email: normalizedEmail,
-        password: normalizedPassword ? '[PROVIDED]' : '[MISSING]',
-        adminKey: normalizedAdminKey ? '[PROVIDED]' : '[MISSING]'
+      console.log('📤 Sending admin login request:', {
+        url: `${API_BASE_URL}/admin/auth/login`,
+        email: loginData.email,
+        password: loginData.password ? '[PROVIDED]' : '[MISSING]',
+        adminKey: loginData.adminKey ? '[PROVIDED]' : '[MISSING]'
       });
 
-      // Check credentials
-      const isValid = validCredentials.some(cred => 
-        cred.email === normalizedEmail && 
-        cred.password === normalizedPassword && 
-        cred.adminKey === normalizedAdminKey
-      );
+      // Make API call to backend
+      const response = await fetch(`${API_BASE_URL}/admin/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loginData)
+      });
 
-      console.log('Credential validation result:', isValid);
+      console.log('📥 API Response Status:', response.status, response.statusText);
 
-      if (isValid) {
-        // Create admin user object
+      const data = await response.json();
+      console.log('📥 API Response Data:', data);
+
+      if (response.ok && data.success) {
+        console.log('✅ Admin login successful');
+        
+        // Store admin user data
         const adminUser = {
-          id: 1,
-          name: 'Admin User',
-          firstName: 'Admin',
-          lastName: 'User',
-          email: normalizedEmail,
+          id: data.user.id,
+          name: data.user.name,
+          firstName: data.user.name.split(' ')[0],
+          lastName: data.user.name.split(' ')[1] || 'User',
+          email: data.user.email,
           accountNumber: 'ADMIN001',
           balance: 0,
           phone: '01700000000',
           address: 'Admin Office',
           isAdmin: true,
+          token: data.token,
           notificationPreferences: {
             smsEnabled: true,
             emailEnabled: true,
@@ -76,20 +84,22 @@ const AdminLogin: React.FC = () => {
           }
         };
 
-        // Store admin user in localStorage
+        // Store admin user and token
         localStorage.setItem('bankingUser', JSON.stringify(adminUser));
-        console.log('✅ Admin user stored in localStorage');
+        localStorage.setItem('adminToken', data.token);
+        console.log('✅ Admin user and token stored in localStorage');
         
         // Use setTimeout to ensure state updates complete before navigation
         setTimeout(() => {
           window.location.href = '/admin';
         }, 100);
       } else {
-        setError('Invalid admin credentials. Please check username, password, and admin key.');
+        console.error('❌ Admin login failed:', data.message);
+        setError(data.message || 'Invalid admin credentials. Please check username, password, and admin key.');
       }
     } catch (error) {
-      console.error('Admin login error:', error);
-      setError('Login failed. Please try again.');
+      console.error('🚨 Admin login error:', error);
+      setError('Login failed. Unable to connect to server. Please try again.');
     } finally {
       setLoading(false);
     }
