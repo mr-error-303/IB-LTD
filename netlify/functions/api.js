@@ -19,24 +19,28 @@ app.use((req, res, next) => {
   }
 });
 
-// Health check endpoint - both with and without /api prefix
+// Health check endpoint - handle both direct and proxied requests
+app.get('/', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'IB LTD API is working!',
+    timestamp: new Date().toISOString(),
+    version: '12.0.0',
+    platform: 'Netlify',
+    path: req.path,
+    url: req.url
+  });
+});
+
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
     message: 'IB LTD API is working!',
     timestamp: new Date().toISOString(),
     version: '12.0.0',
-    platform: 'Netlify'
-  });
-});
-
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    message: 'IB LTD API is working!',
-    timestamp: new Date().toISOString(),
-    version: '12.0.0',
-    platform: 'Netlify'
+    platform: 'Netlify',
+    path: req.path,
+    url: req.url
   });
 });
 
