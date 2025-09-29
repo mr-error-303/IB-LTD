@@ -78,26 +78,22 @@ app.post('/api/admin/auth/login', (req, res) => {
     { email: 'admin', password: 'admin123', adminKey: 'admin123' }
   ];
 
-  console.log('Admin login attempt:', { email, password, adminKey });
-  console.log('Valid credentials:', validAdminCredentials);
+  // Normalize email input (trim whitespace and convert to lowercase)
+  const normalizedEmail = email ? email.trim().toLowerCase() : '';
+  const normalizedPassword = password ? password.trim() : '';
+  const normalizedAdminKey = adminKey ? adminKey.trim() : '';
 
-  // Debug each credential check
-  validAdminCredentials.forEach((admin, index) => {
-    console.log(`Checking credential ${index}:`, {
-      emailMatch: admin.email === email,
-      passwordMatch: admin.password === password,
-      adminKeyMatch: admin.adminKey === adminKey,
-      adminEmail: admin.email,
-      inputEmail: email,
-      emailType: typeof admin.email,
-      inputEmailType: typeof email
-    });
+  console.log('Admin login attempt:', { 
+    originalEmail: email, 
+    normalizedEmail, 
+    password: normalizedPassword, 
+    adminKey: normalizedAdminKey 
   });
 
   const isValidAdmin = validAdminCredentials.some(admin => 
-    admin.email === email && 
-    admin.password === password && 
-    admin.adminKey === adminKey
+    admin.email.toLowerCase() === normalizedEmail && 
+    admin.password === normalizedPassword && 
+    admin.adminKey === normalizedAdminKey
   );
 
   console.log('Is valid admin:', isValidAdmin);
