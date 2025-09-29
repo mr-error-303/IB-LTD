@@ -19,8 +19,18 @@ app.use((req, res, next) => {
   }
 });
 
-// Health check endpoint
+// Health check endpoint - both with and without /api prefix
 app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'IB LTD API is working!',
+    timestamp: new Date().toISOString(),
+    version: '12.0.0',
+    platform: 'Netlify'
+  });
+});
+
+app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
     message: 'IB LTD API is working!',
