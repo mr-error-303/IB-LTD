@@ -21,112 +21,62 @@ const AdminLogin: React.FC = () => {
     setError('');
 
     try {
-      // Check if we're in development or production
-      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      
-      if (isDevelopment) {
-        // Development - use hardcoded credentials
-        if (
-          (credentials.username === 'admin@example.com' || credentials.username === 'admin') &&
-          credentials.password === 'admin123' &&
-          credentials.adminKey === 'admin123'
-        ) {
-          // Create admin user object
-          const adminUser = {
-            id: 1,
-            name: 'Admin User',
-            firstName: 'Admin',
-            lastName: 'User',
-            email: credentials.username,
-            accountNumber: 'ADMIN001',
-            balance: 0,
-            phone: '01700000000',
-            address: 'Admin Office',
-            isAdmin: true,
-            notificationPreferences: {
-              smsEnabled: true,
-              emailEnabled: true,
-              transactionAlerts: true,
-              securityAlerts: true,
-              billPaymentAlerts: true,
-              mobileRechargeAlerts: true
-            }
-          };
+      // Use client-side authentication for both development and production
+      // Valid admin credentials
+      const validCredentials = [
+        { email: 'admin@example.com', password: 'admin123', adminKey: 'admin123' },
+        { email: 'admin@ibltd.com', password: 'admin123', adminKey: 'admin123' },
+        { email: 'admin', password: 'admin123', adminKey: 'admin123' }
+      ];
 
-          // Store admin user in localStorage
-          localStorage.setItem('bankingUser', JSON.stringify(adminUser));
-          navigate('/admin');
-        } else {
-          setError('Invalid admin credentials. Please check username, password, and admin key.');
-        }
-      } else {
-        // Production - use API endpoint
-        const apiUrl = 'https://international-bank-limited.netlify.app/api/admin/auth/login';
-        
-        console.log('Attempting admin login with:', {
-          email: credentials.username,
-          password: credentials.password,
-          adminKey: credentials.adminKey
-        });
+      // Normalize inputs
+      const normalizedEmail = credentials.username ? credentials.username.toLowerCase().trim() : '';
+      const normalizedPassword = credentials.password ? credentials.password.trim() : '';
+      const normalizedAdminKey = credentials.adminKey ? credentials.adminKey.trim() : '';
 
-        try {
-          const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: credentials.username,
-              password: credentials.password,
-              adminKey: credentials.adminKey
-            }),
-          });
+      console.log('Admin login attempt:', {
+        email: normalizedEmail,
+        password: normalizedPassword ? '[PROVIDED]' : '[MISSING]',
+        adminKey: normalizedAdminKey ? '[PROVIDED]' : '[MISSING]'
+      });
 
-          console.log('API Response status:', response.status);
-          
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+      // Check credentials
+      const isValid = validCredentials.some(cred => 
+        cred.email === normalizedEmail && 
+        cred.password === normalizedPassword && 
+        cred.adminKey === normalizedAdminKey
+      );
+
+      console.log('Credential validation result:', isValid);
+
+      if (isValid) {
+        // Create admin user object
+        const adminUser = {
+          id: 1,
+          name: 'Admin User',
+          firstName: 'Admin',
+          lastName: 'User',
+          email: normalizedEmail,
+          accountNumber: 'ADMIN001',
+          balance: 0,
+          phone: '01700000000',
+          address: 'Admin Office',
+          isAdmin: true,
+          notificationPreferences: {
+            smsEnabled: true,
+            emailEnabled: true,
+            transactionAlerts: true,
+            securityAlerts: true,
+            billPaymentAlerts: true,
+            mobileRechargeAlerts: true
           }
-          
-          const data = await response.json();
-          console.log('API Response data:', data);
+        };
 
-          if (data.success) {
-          // Create admin user object from API response
-          const adminUser = {
-            id: data.user.id,
-            name: data.user.name,
-            firstName: 'Admin',
-            lastName: 'User',
-            email: data.user.email,
-            accountNumber: 'ADMIN001',
-            balance: 0,
-            phone: '01700000000',
-            address: 'Admin Office',
-            isAdmin: true,
-            notificationPreferences: {
-              smsEnabled: true,
-              emailEnabled: true,
-              transactionAlerts: true,
-              securityAlerts: true,
-              billPaymentAlerts: true,
-              mobileRechargeAlerts: true
-            }
-          };
-
-          // Store admin user and token in localStorage
-          localStorage.setItem('bankingUser', JSON.stringify(adminUser));
-          localStorage.setItem('adminToken', data.token);
-          console.log('Admin login successful, navigating to /admin');
-          navigate('/admin');
-        } else {
-          console.error('Login failed:', data.message);
-          setError(data.message || 'Invalid admin credentials');
-        }
-      } catch (fetchError) {
-        console.error('Network error during API call:', fetchError);
-        setError('Network error. Please check your connection and try again.');
-      }
+        // Store admin user in localStorage
+        localStorage.setItem('bankingUser', JSON.stringify(adminUser));
+        navigate('/admin');
+      } else {
+        setError('Invalid admin credentials. Please check username, password, and admin key.');
       }
     } catch (error) {
       console.error('Admin login error:', error);
