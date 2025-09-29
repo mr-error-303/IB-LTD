@@ -137,6 +137,46 @@ app.post('/api/admin/auth/login', (req, res) => {
   }
 });
 
+// Test endpoint to debug credentials
+app.post('/api/admin/test-credentials', (req, res) => {
+  const { email, password, adminKey } = req.body;
+  
+  const validAdminCredentials = [
+    { email: 'admin@example.com', password: 'admin123', adminKey: 'admin123' },
+    { email: 'admin@ibltd.com', password: 'admin123', adminKey: 'admin123' },
+    { email: 'admin', password: 'admin123', adminKey: 'admin123' }
+  ];
+
+  const normalizedEmail = email ? email.trim().toLowerCase() : '';
+  const normalizedPassword = password ? password.trim() : '';
+  const normalizedAdminKey = adminKey ? adminKey.trim() : '';
+
+  const results = validAdminCredentials.map((admin, index) => {
+    const emailMatch = admin.email.toLowerCase() === normalizedEmail;
+    const passwordMatch = admin.password === normalizedPassword;
+    const adminKeyMatch = admin.adminKey === normalizedAdminKey;
+    
+    return {
+      index,
+      adminEmail: admin.email,
+      adminEmailLower: admin.email.toLowerCase(),
+      normalizedEmail,
+      emailMatch,
+      passwordMatch,
+      adminKeyMatch,
+      allMatch: emailMatch && passwordMatch && adminKeyMatch
+    };
+  });
+
+  res.json({
+    input: { email, password, adminKey },
+    normalized: { normalizedEmail, normalizedPassword, normalizedAdminKey },
+    validCredentials: validAdminCredentials,
+    results,
+    finalResult: results.some(r => r.allMatch)
+  });
+});
+
 // Catch all other routes
 app.use('*', (req, res) => {
   res.status(404).json({
