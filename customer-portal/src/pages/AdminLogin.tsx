@@ -17,6 +17,10 @@ const AdminLogin: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('🔥 Admin login form submitted');
+    
     setLoading(true);
     setError('');
 
@@ -74,9 +78,12 @@ const AdminLogin: React.FC = () => {
 
         // Store admin user in localStorage
         localStorage.setItem('bankingUser', JSON.stringify(adminUser));
+        console.log('✅ Admin user stored in localStorage');
         
-        // Force navigation using window.location instead of navigate
-        window.location.href = '/admin';
+        // Use setTimeout to ensure state updates complete before navigation
+        setTimeout(() => {
+          window.location.href = '/admin';
+        }, 100);
       } else {
         setError('Invalid admin credentials. Please check username, password, and admin key.');
       }
@@ -85,6 +92,21 @@ const AdminLogin: React.FC = () => {
       setError('Login failed. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Add button click handler as backup
+  const handleButtonClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('🔥 Admin login button clicked');
+    
+    // Trigger form submission
+    const form = document.querySelector('form');
+    if (form) {
+      const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+      form.dispatchEvent(submitEvent);
     }
   };
 
@@ -162,6 +184,7 @@ const AdminLogin: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
+              onClick={handleButtonClick}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
             >
               {loading ? 'Signing in...' : 'Sign In'}
