@@ -25,50 +25,50 @@ const AdminLogin: React.FC = () => {
     setError('');
 
     try {
-      // TEMPORARY FIX: Use client-side authentication since backend API is not accessible
-      // Valid admin credentials
-      const validCredentials = [
-        { email: 'admin@example.com', password: 'admin123', adminKey: 'admin123' },
-        { email: 'admin@ibltd.com', password: 'admin123', adminKey: 'admin123' },
-        { email: 'admin', password: 'admin123', adminKey: 'admin123' }
-      ];
-
-      // Normalize inputs
-      const normalizedEmail = credentials.username ? credentials.username.toLowerCase().trim() : '';
-      const normalizedPassword = credentials.password ? credentials.password.trim() : '';
-      const normalizedAdminKey = credentials.adminKey ? credentials.adminKey.trim() : '';
-
+      // Use environment variable for API URL
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://international-bank-limited.netlify.app/api';
+      const loginEndpoint = `${API_BASE_URL}/admin/auth/login`;
+      
+      console.log('API Endpoint:', loginEndpoint);
       console.log('Admin login attempt:', {
-        email: normalizedEmail,
-        password: normalizedPassword ? '[PROVIDED]' : '[MISSING]',
-        adminKey: normalizedAdminKey ? '[PROVIDED]' : '[MISSING]'
+        email: credentials.username,
+        password: credentials.password ? '[PROVIDED]' : '[MISSING]',
+        adminKey: credentials.adminKey ? '[PROVIDED]' : '[MISSING]'
       });
 
-      // Check credentials
-      const isValid = validCredentials.some(cred => 
-        cred.email === normalizedEmail && 
-        cred.password === normalizedPassword && 
-        cred.adminKey === normalizedAdminKey
-      );
+      // Make API call to backend
+      const response = await fetch(loginEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: credentials.username,
+          password: credentials.password,
+          adminKey: credentials.adminKey
+        })
+      });
 
-      console.log('Credential validation result:', isValid);
+      console.log('API Response Status:', response.status);
+      const data = await response.json();
+      console.log('API Response Data:', data);
 
-      if (isValid) {
+      if (response.ok && data.success) {
         console.log('✅ Admin login successful');
         
-        // Create admin user object
+        // Create admin user object from API response
         const adminUser = {
-          id: 1,
-          name: 'Admin User',
-          firstName: 'Admin',
-          lastName: 'User',
-          email: normalizedEmail,
+          id: data.user.id,
+          name: data.user.name,
+          firstName: data.user.name.split(' ')[0] || 'Admin',
+          lastName: data.user.name.split(' ')[1] || 'User',
+          email: data.user.email,
           accountNumber: 'ADMIN001',
           balance: 0,
           phone: '01700000000',
           address: 'Admin Office',
           isAdmin: true,
-          token: 'client-side-token-' + Date.now(),
+          token: data.token,
           notificationPreferences: {
             smsEnabled: true,
             emailEnabled: true,
@@ -81,7 +81,7 @@ const AdminLogin: React.FC = () => {
 
         // Store admin user and token
         localStorage.setItem('bankingUser', JSON.stringify(adminUser));
-        localStorage.setItem('adminToken', adminUser.token);
+        localStorage.setItem('adminToken', data.token);
         console.log('✅ Admin user and token stored in localStorage');
         
         // Use setTimeout to ensure state updates complete before navigation
@@ -89,12 +89,63 @@ const AdminLogin: React.FC = () => {
           window.location.href = '/admin';
         }, 100);
       } else {
-        console.error('❌ Admin login failed: Invalid credentials');
-        setError('Invalid admin credentials. Please check username, password, and admin key.');
+        console.error('❌ Admin login failed:', data.message);
+        setError(data.message || 'Invalid admin credentials. Please check username, password, and admin key.');
       }
     } catch (error) {
       console.error('🚨 Admin login error:', error);
-      setError('Login failed. Please try again.');
+      
+      // Fallback to client-side authentication if API is not accessible
+      console.log('🔄 Falling back to client-side authentication...');
+      
+      const validCredentials = [
+        { email: 'admin@example.com', password: 'admin123', adminKey: 'admin123' },
+        { email: 'admin@ibltd.com', password: 'admin123', adminKey: 'admin123' },
+        { email: 'admin', password: 'admin123', adminKey: 'admin123' }
+      ];
+
+      const normalizedEmail = credentials.username ? credentials.username.toLowerCase().trim() : '';
+      const normalizedPassword = credentials.password ? credentials.password.trim() : '';
+      const normalizedAdminKey = credentials.adminKey ? credentials.adminKey.trim() : '';
+
+      const isValid = validCredentials.some(cred => 
+        cred.email === normalizedEmail && 
+        cred.password === normalizedPassword && 
+        cred.adminKey === normalizedAdminKey
+      );
+
+      if (isValid) {
+        const adminUser = {
+          id: 1,
+          name: 'Admin User',
+          firstName: 'Admin',
+          lastName: 'User',
+          email: normalizedEmail,
+          accountNumber: 'ADMIN001',
+          balance: 0,
+          phone: '01700000000',
+          address: 'Admin Office',
+          isAdmin: true,
+          token: 'fallback-token-' + Date.now(),
+          notificationPreferences: {
+            smsEnabled: true,
+            emailEnabled: true,
+            transactionAlerts: true,
+            securityAlerts: true,
+            billPaymentAlerts: true,
+            mobileRechargeAlerts: true
+          }
+        };
+
+        localStorage.setItem('bankingUser', JSON.stringify(adminUser));
+        localStorage.setItem('adminToken', adminUser.token);
+        
+        setTimeout(() => {
+          window.location.href = '/admin';
+        }, 100);
+      } else {
+        setError('Login failed. Please check your credentials and try again.');
+      }
     } finally {
       setLoading(false);
     }
