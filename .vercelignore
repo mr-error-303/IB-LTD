@@ -1,0 +1,5 @@
+backend_old/
+api_old/
+frontend/
+*.md
+.git/

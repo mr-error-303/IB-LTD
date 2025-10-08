@@ -1,0 +1,1736 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  PiggyBank,
+  ArrowLeft,
+  Calculator,
+  FileText,
+  Shield,
+  Upload,
+  Download,
+  User,
+  Home,
+  Car,
+  GraduationCap,
+  Briefcase,
+  Heart,
+  Wheat,
+  Percent,
+  Loader2,
+  Check,
+  X,
+  FileCheck,
+  FileX,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  Building,
+  HelpCircle,
+  BookOpen
+} from 'lucide-react';
+import LoanApplicationModal from '../components/LoanApplicationModal';
+import { useCurrency } from '../context/CurrencyContext';
+import { formatCurrency, getCurrencySymbol } from '../utils/currencyUtils';
+
+interface LoanApplication {
+  id: string;
+  type: string;
+  amount: number;
+  status: 'pending' | 'approved' | 'rejected' | 'processing';
+  appliedDate: string;
+  expectedDate?: string;
+}
+
+interface FormData {
+  // Personal Details
+  fullName: string;
+  phone: string;
+  email: string;
+  passportNumber: string;
+  nidNumber: string;
+  tinNumber: string; // optional
+  address: string;
+  
+  // Employment Information
+  employmentType: 'employed' | 'self-employed' | 'business' | 'retired' | 'unemployed';
+  companyName: string;
+  designation: string;
+  workExperience: string;
+  monthlyIncome: string;
+  monthlyExpenses: string;
+  
+  // Loan Details
+  loanAmount: string;
+  loanPurpose: string;
+  repaymentPeriod: string; // 2-20 years
+  
+  // Documents
+  documents: {
+    passport?: File;
+    nid?: File;
+    photo?: File;
+    bankStatement?: File;
+    salarySlip?: File;
+    tradeLicense?: File;
+  };
+  
+  // Nominee/Beneficiary Details
+  nominee: {
+    name: string;
+    relationship: 'father' | 'mother' | 'brother' | 'sister' | 'uncle' | 'aunt' | 'wife' | 'husband' | 'son' | 'daughter' | 'other';
+    nidNumber: string;
+    address: string;
+    documents: {
+      nidOrPassport?: File;
+      photo?: File;
+    };
+  };
+  
+  termsAccepted: boolean;
+}
+
+interface FormErrors {
+  fullName?: string;
+  phone?: string;
+  email?: string;
+  passportNumber?: string;
+  nidNumber?: string;
+  address?: string;
+  employmentType?: string;
+  companyName?: string;
+  designation?: string;
+  workExperience?: string;
+  monthlyIncome?: string;
+  monthlyExpenses?: string;
+  loanAmount?: string;
+  loanPurpose?: string;
+  repaymentPeriod?: string;
+  nominee?: {
+    name?: string;
+    relationship?: string;
+    nidNumber?: string;
+    address?: string;
+  };
+  termsAccepted?: string;
+}
+
+const LoanServices: React.FC = () => {
+  const navigate = useNavigate();
+  const { selectedCurrency } = useCurrency();
+  const currencySymbol = getCurrencySymbol(selectedCurrency.code);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [selectedLoanType, setSelectedLoanType] = useState('');
+  const [loanAmount, setLoanAmount] = useState('');
+  const [loanTenure, setLoanTenure] = useState('');
+  const [interestRate] = useState(8.5);
+  const [showApplication, setShowApplication] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [applicationData, setApplicationData] = useState<any>(null);
+  const [formData, setFormData] = useState<FormData>({
+    // Personal Details
+    fullName: '',
+    phone: '',
+    email: '',
+    passportNumber: '',
+    nidNumber: '',
+    tinNumber: '',
+    address: '',
+    
+    // Employment Information
+    employmentType: 'employed',
+    companyName: '',
+    designation: '',
+    workExperience: '',
+    monthlyIncome: '',
+    monthlyExpenses: '',
+    
+    // Loan Details
+    loanAmount: '',
+    loanPurpose: '',
+    repaymentPeriod: '5',
+    
+    // Documents
+    documents: {
+      passport: undefined,
+      nid: undefined,
+      photo: undefined,
+      bankStatement: undefined,
+      salarySlip: undefined,
+      tradeLicense: undefined,
+    },
+    
+    // Nominee/Beneficiary Details
+    nominee: {
+      name: '',
+      relationship: 'father',
+      nidNumber: '',
+      address: '',
+      documents: {
+        nidOrPassport: undefined,
+        photo: undefined,
+      },
+    },
+    
+    termsAccepted: false
+  });
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [applications] = useState<LoanApplication[]>([
+    {
+      id: '1',
+      type: 'Personal Loan',
+      amount: 50000,
+      status: 'approved',
+      appliedDate: '2024-01-15',
+      expectedDate: '2024-01-20'
+    },
+    {
+      id: '2',
+      type: 'Home Loan',
+      amount: 500000,
+      status: 'processing',
+      appliedDate: '2024-01-10'
+    }
+  ]);
+
+  // Auto-save functionality
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formData.fullName || formData.email || formData.phone) {
+        localStorage.setItem('loanFormData', JSON.stringify(formData));
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [formData]);
+
+  // Load saved form data
+  useEffect(() => {
+    const savedData = localStorage.getItem('loanFormData');
+    if (savedData) {
+      setFormData(JSON.parse(savedData));
+    }
+  }, []);
+
+  // Form validation
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {};
+    
+    // Personal Details Validation
+    if (!formData.fullName.trim()) {
+      errors.fullName = 'Full name is required';
+    }
+    
+    if (!formData.phone.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!/^\d{10}$/.test(formData.phone.replace(/\D/g, ''))) {
+      errors.phone = 'Please enter a valid 10-digit phone number';
+    }
+    
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    
+    if (!formData.passportNumber.trim()) {
+      errors.passportNumber = 'Passport number is required';
+    }
+    
+    if (!formData.nidNumber.trim()) {
+      errors.nidNumber = 'NID number is required';
+    } else if (!/^\d{10,17}$/.test(formData.nidNumber)) {
+      errors.nidNumber = 'Please enter a valid NID number (10-17 digits)';
+    }
+    
+    if (!formData.address.trim()) {
+      errors.address = 'Address is required';
+    }
+    
+    // Employment Information Validation
+    if (!formData.employmentType) {
+      errors.employmentType = 'Employment type is required';
+    }
+    
+    if (!formData.companyName.trim()) {
+      errors.companyName = 'Company/Organization name is required';
+    }
+    
+    if (!formData.designation.trim()) {
+      errors.designation = 'Designation is required';
+    }
+    
+    if (!formData.workExperience.trim()) {
+      errors.workExperience = 'Work experience is required';
+    }
+    
+    if (!formData.monthlyIncome.trim()) {
+      errors.monthlyIncome = 'Monthly income is required';
+    } else if (parseFloat(formData.monthlyIncome) <= 0) {
+      errors.monthlyIncome = 'Monthly income must be greater than 0';
+    }
+    
+    if (!formData.monthlyExpenses.trim()) {
+      errors.monthlyExpenses = 'Monthly expenses is required';
+    } else if (parseFloat(formData.monthlyExpenses) < 0) {
+      errors.monthlyExpenses = 'Monthly expenses cannot be negative';
+    }
+    
+    // Loan Details Validation
+    if (!formData.loanAmount.trim()) {
+      errors.loanAmount = 'Loan amount is required';
+    } else if (parseFloat(formData.loanAmount) <= 0) {
+      errors.loanAmount = 'Loan amount must be greater than 0';
+    }
+    
+    if (!formData.loanPurpose.trim()) {
+      errors.loanPurpose = 'Loan purpose is required';
+    }
+    
+    if (!formData.repaymentPeriod) {
+      errors.repaymentPeriod = 'Repayment period is required';
+    }
+    
+    // Nominee Details Validation
+    const nomineeErrors: any = {};
+    
+    if (!formData.nominee.name.trim()) {
+      nomineeErrors.name = 'Nominee name is required';
+    }
+    
+    if (!formData.nominee.relationship) {
+      nomineeErrors.relationship = 'Relationship is required';
+    }
+    
+    if (!formData.nominee.nidNumber.trim()) {
+      nomineeErrors.nidNumber = 'Nominee NID number is required';
+    } else if (!/^\d{10,17}$/.test(formData.nominee.nidNumber)) {
+      nomineeErrors.nidNumber = 'Please enter a valid NID number (10-17 digits)';
+    }
+    
+    if (!formData.nominee.address.trim()) {
+      nomineeErrors.address = 'Nominee address is required';
+    }
+    
+    if (Object.keys(nomineeErrors).length > 0) {
+      errors.nominee = nomineeErrors;
+    }
+    
+    // Terms and Conditions
+    if (!formData.termsAccepted) {
+      errors.termsAccepted = 'You must accept the terms and conditions';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      setShowError(true);
+      setErrorMessage('Please fix the errors in the form');
+      setTimeout(() => setShowError(false), 5000);
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Generate application ID
+      const applicationId = `LA${Date.now().toString().slice(-6)}`;
+      
+      // Prepare application data for modal
+      const appData = {
+        applicationId,
+        applicantName: formData.fullName,
+        loanAmount: formData.loanAmount,
+        loanType: formData.loanPurpose,
+        status: Math.random() > 0.5 ? 'In Review' : 'Pending' as 'In Review' | 'Pending',
+        submissionDate: new Date().toLocaleDateString('en-GB')
+      };
+      
+      setApplicationData(appData);
+      setShowModal(true);
+      
+      // Clear form data from localStorage
+      localStorage.removeItem('loanFormData');
+      
+      // Reset form
+      setFormData({
+        // Personal Details
+        fullName: '',
+        phone: '',
+        email: '',
+        passportNumber: '',
+        nidNumber: '',
+        tinNumber: '',
+        address: '',
+        
+        // Employment Information
+        employmentType: 'employed',
+        companyName: '',
+        designation: '',
+        workExperience: '',
+        monthlyIncome: '',
+        monthlyExpenses: '',
+        
+        // Loan Details
+        loanAmount: '',
+        loanPurpose: '',
+        repaymentPeriod: '5',
+        
+        // Documents
+        documents: {
+          passport: undefined,
+          nid: undefined,
+          photo: undefined,
+          bankStatement: undefined,
+          salarySlip: undefined,
+          tradeLicense: undefined,
+        },
+        
+        // Nominee/Beneficiary Details
+        nominee: {
+          name: '',
+          relationship: 'father',
+          nidNumber: '',
+          address: '',
+          documents: {
+            nidOrPassport: undefined,
+            photo: undefined,
+          },
+        },
+        
+        termsAccepted: false
+      });
+      
+    } catch (error) {
+      setShowError(true);
+      setErrorMessage('Failed to submit application. Please try again.');
+      setTimeout(() => setShowError(false), 5000);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle input changes
+  const handleInputChange = (field: keyof FormData, value: string | boolean | FileList | null) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Clear error for this field (only for fields that can have errors)
+    if (field !== 'documents' && formErrors[field as keyof FormErrors]) {
+      setFormErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  // Handle file upload
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      handleInputChange('documents', files);
+    }
+  };
+
+  // Notification component
+  const Notification: React.FC<{ type: 'success' | 'error'; message: string; show: boolean }> = ({ type, message, show }) => {
+    if (!show) return null;
+    
+    return (
+      <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
+        type === 'success' 
+          ? 'bg-green-500 text-white' 
+          : 'bg-red-500 text-white'
+      }`}>
+        <div className="flex items-center space-x-2">
+          {type === 'success' ? (
+            <Check className="h-5 w-5" />
+          ) : (
+            <X className="h-5 w-5" />
+          )}
+          <span>{message}</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Loading overlay component
+  const LoadingOverlay: React.FC<{ show: boolean }> = ({ show }) => {
+    if (!show) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
+          <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+          <span className="text-gray-900">Processing your application...</span>
+        </div>
+      </div>
+    );
+  };
+
+  const loanTypes = [
+    {
+      id: 'personal',
+      title: 'Personal Loan',
+      icon: User,
+      description: 'Quick personal loans for your immediate needs',
+      rate: '8.5% - 12%',
+      maxAmount: `${currencySymbol}5,00,000`,
+      tenure: '1-5 years',
+      color: 'from-blue-500 to-blue-600'
+    },
+    {
+      id: 'business',
+      title: 'Business Loan',
+      icon: Briefcase,
+      description: 'Grow your business with flexible funding',
+      rate: '9% - 15%',
+      maxAmount: `${currencySymbol}50,00,000`,
+      tenure: '1-10 years',
+      color: 'from-orange-500 to-orange-600'
+    },
+    {
+      id: 'education',
+      title: 'Education Loan',
+      icon: GraduationCap,
+      description: 'Invest in your future with education loans',
+      rate: '7% - 10%',
+      maxAmount: `${currencySymbol}20,00,000`,
+      tenure: '5-15 years',
+      color: 'from-pink-500 to-pink-600'
+    },
+    {
+      id: 'home',
+      title: 'Home Loan',
+      icon: Home,
+      description: 'Affordable home loans with competitive rates',
+      rate: '7.5% - 9%',
+      maxAmount: `${currencySymbol}1,00,00,000`,
+      tenure: '5-30 years',
+      color: 'from-green-500 to-green-600'
+    },
+    {
+      id: 'car',
+      title: 'Car Loan',
+      icon: Car,
+      description: 'Drive your dream car with easy financing',
+      rate: '8% - 11%',
+      maxAmount: `${currencySymbol}25,00,000`,
+      tenure: '1-7 years',
+      color: 'from-purple-500 to-purple-600'
+    },
+    {
+      id: 'emergency',
+      title: 'Emergency Loan',
+      icon: Heart,
+      description: 'Quick funds for urgent financial needs',
+      rate: '10% - 15%',
+      maxAmount: `${currencySymbol}2,00,000`,
+      tenure: '6 months - 3 years',
+      color: 'from-red-500 to-red-600'
+    },
+    {
+      id: 'agricultural',
+      title: 'Agricultural Loan',
+      icon: Wheat,
+      description: 'Support for farming and agricultural activities',
+      rate: '6% - 9%',
+      maxAmount: `${currencySymbol}10,00,000`,
+      tenure: '1-7 years',
+      color: 'from-yellow-500 to-yellow-600'
+    }
+  ];
+
+  const calculateEMI = () => {
+    const principal = parseFloat(loanAmount);
+    const rate = interestRate / 100 / 12;
+    const tenure = parseFloat(loanTenure) * 12;
+    
+    if (principal && rate && tenure) {
+      const emi = (principal * rate * Math.pow(1 + rate, tenure)) / (Math.pow(1 + rate, tenure) - 1);
+      return Math.round(emi);
+    }
+    return 0;
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case 'processing':
+        return <Clock className="h-5 w-5 text-yellow-500" />;
+      case 'rejected':
+        return <AlertCircle className="h-5 w-5 text-red-500" />;
+      default:
+        return <Clock className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'processing':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Notifications */}
+      <Notification 
+        type="success" 
+        message="Application submitted successfully!" 
+        show={showSuccess} 
+      />
+      <Notification 
+        type="error" 
+        message={errorMessage} 
+        show={showError} 
+      />
+      
+      {/* Loading Overlay */}
+      <LoadingOverlay show={isSubmitting} />
+
+      {/* Header */}
+      <header className="bg-white/10 backdrop-blur-md border-b border-white/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center h-16">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="p-2 text-white/70 hover:text-white transition-colors mr-4"
+            >
+              <ArrowLeft className="h-6 w-6" />
+            </button>
+            <div className="flex items-center">
+              <PiggyBank className="h-8 w-8 text-white mr-3" />
+              <h1 className="text-2xl font-bold text-white">Loan Services</h1>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation Tabs */}
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-4">
+        <div className="flex space-x-1 bg-white/10 backdrop-blur-md rounded-xl p-1 overflow-x-auto">
+          {[
+            { id: 'overview', label: 'Overview' },
+            { id: 'calculator', label: 'Calculator' },
+            { id: 'apply', label: 'Apply' },
+            { id: 'status', label: 'My Applications' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-2 px-2 sm:px-3 rounded-lg font-medium transition-all duration-300 text-sm whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'bg-white text-gray-900 shadow-lg'
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content */}
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pb-6">
+        {activeTab === 'overview' && (
+          <div className="space-y-4 animate-fade-in">
+            {/* Header Section */}
+            <div className="bg-white rounded-xl p-4 shadow-lg text-center">
+              <h2 className="text-xl font-bold text-gray-800 mb-2">Choose Your Loan Type</h2>
+              <p className="text-gray-600 text-sm">Find the perfect loan solution for your needs</p>
+            </div>
+
+            {/* Loan Types Grid - Dashboard Style */}
+            <div className="space-y-4">
+              {/* Personal & Business Loans */}
+              <div className="bg-white rounded-xl p-3 shadow-lg">
+                <h3 className="text-base font-semibold text-gray-800 mb-3">Personal & Business Loans</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {loanTypes.slice(0, 4).map((loan, index) => {
+                    const IconComponent = loan.icon;
+                    return (
+                      <div
+                        key={loan.id}
+                        onClick={() => {
+                          setSelectedLoanType(loan.id);
+                          setActiveTab('apply');
+                        }}
+                        className="flex flex-col items-center p-2 hover:bg-gray-50 rounded-lg transition-all duration-300 cursor-pointer group"
+                      >
+                        <div className={`bg-gradient-to-br ${loan.color.replace('from-', 'from-').replace('to-', 'to-').replace('-500', '-100').replace('-600', '-50')} rounded-full p-2 mb-2 w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md`}>
+                          <IconComponent className={`h-5 w-5 ${loan.color.includes('blue') ? 'text-blue-600' : loan.color.includes('green') ? 'text-green-600' : loan.color.includes('purple') ? 'text-purple-600' : loan.color.includes('orange') ? 'text-orange-600' : loan.color.includes('red') ? 'text-red-600' : loan.color.includes('yellow') ? 'text-yellow-600' : 'text-indigo-600'}`} />
+                        </div>
+                        <h4 className="text-gray-800 font-semibold text-xs text-center leading-tight mb-1">{loan.title}</h4>
+                        <p className="text-gray-500 text-xs text-center mb-1">{loan.rate}</p>
+                        <div className="text-xs text-gray-400 text-center">
+                          <div>Max: {loan.maxAmount}</div>
+                          <div>{loan.tenure}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Property & Vehicle Loans */}
+              {loanTypes.length > 4 && (
+                <div className="bg-white rounded-xl p-3 shadow-lg">
+                  <h3 className="text-base font-semibold text-gray-800 mb-3">Property & Vehicle Loans</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {loanTypes.slice(4, 8).map((loan, index) => {
+                      const IconComponent = loan.icon;
+                      return (
+                        <div
+                          key={loan.id}
+                          onClick={() => {
+                            setSelectedLoanType(loan.id);
+                            setActiveTab('apply');
+                          }}
+                          className="flex flex-col items-center p-2 hover:bg-gray-50 rounded-lg transition-all duration-300 cursor-pointer group"
+                        >
+                          <div className={`bg-gradient-to-br ${loan.color.replace('from-', 'from-').replace('to-', 'to-').replace('-500', '-100').replace('-600', '-50')} rounded-full p-2 mb-2 w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md`}>
+                            <IconComponent className={`h-5 w-5 ${loan.color.includes('blue') ? 'text-blue-600' : loan.color.includes('green') ? 'text-green-600' : loan.color.includes('purple') ? 'text-purple-600' : loan.color.includes('orange') ? 'text-orange-600' : loan.color.includes('red') ? 'text-red-600' : loan.color.includes('yellow') ? 'text-yellow-600' : 'text-indigo-600'}`} />
+                          </div>
+                          <h4 className="text-gray-800 font-semibold text-xs text-center leading-tight mb-1">{loan.title}</h4>
+                          <p className="text-gray-500 text-xs text-center mb-1">{loan.rate}</p>
+                          <div className="text-xs text-gray-400 text-center">
+                            <div>Max: {loan.maxAmount}</div>
+                            <div>{loan.tenure}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Actions */}
+              <div className="bg-white rounded-xl p-3 shadow-lg">
+                <h3 className="text-base font-semibold text-gray-800 mb-3">Quick Actions</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <div
+                    onClick={() => setActiveTab('calculator')}
+                    className="flex flex-col items-center p-2 hover:bg-gray-50 rounded-lg transition-all duration-300 cursor-pointer group"
+                  >
+                    <div className="bg-gradient-to-br from-cyan-100 to-cyan-50 rounded-full p-2 mb-2 w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md">
+                      <Calculator className="h-5 w-5 text-cyan-600" />
+                    </div>
+                    <h4 className="text-gray-800 font-semibold text-xs text-center leading-tight">EMI</h4>
+                    <h4 className="text-gray-800 font-semibold text-xs text-center leading-tight">Calculator</h4>
+                    <p className="text-gray-500 text-xs text-center mt-1">Plan Finances</p>
+                  </div>
+
+                  <div
+                    onClick={() => setActiveTab('status')}
+                    className="flex flex-col items-center p-2 hover:bg-gray-50 rounded-lg transition-all duration-300 cursor-pointer group"
+                  >
+                    <div className="bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-full p-2 mb-2 w-10 h-10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md">
+                      <FileText className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <h4 className="text-gray-800 font-semibold text-xs text-center leading-tight">Track</h4>
+                    <h4 className="text-gray-800 font-semibold text-xs text-center leading-tight">Applications</h4>
+                    <p className="text-gray-500 text-xs text-center mt-1">Check Status</p>
+                  </div>
+
+                  <div className="flex flex-col items-center p-3 hover:bg-gray-50 rounded-xl transition-all duration-300 cursor-pointer group">
+                    <div className="bg-gradient-to-br from-violet-100 to-violet-50 rounded-full p-3 mb-3 w-12 h-12 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md">
+                      <HelpCircle className="h-6 w-6 text-violet-600" />
+                    </div>
+                    <h4 className="text-gray-800 font-semibold text-xs text-center leading-tight">Loan</h4>
+                    <h4 className="text-gray-800 font-semibold text-xs text-center leading-tight">Support</h4>
+                    <p className="text-gray-500 text-xs text-center mt-1">Get Help</p>
+                  </div>
+
+                  <div className="flex flex-col items-center p-3 hover:bg-gray-50 rounded-xl transition-all duration-300 cursor-pointer group">
+                    <div className="bg-gradient-to-br from-rose-100 to-rose-50 rounded-full p-3 mb-3 w-12 h-12 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md">
+                      <BookOpen className="h-6 w-6 text-rose-600" />
+                    </div>
+                    <h4 className="text-gray-800 font-semibold text-xs text-center leading-tight">Loan</h4>
+                    <h4 className="text-gray-800 font-semibold text-xs text-center leading-tight">Guide</h4>
+                    <p className="text-gray-500 text-xs text-center mt-1">Learn More</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'calculator' && (
+          <div className="max-w-2xl mx-auto animate-fade-in">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
+              <div className="text-center mb-8">
+                <Calculator className="h-12 w-12 text-white mx-auto mb-4 animate-bounce" />
+                <h2 className="text-2xl font-bold text-white mb-2">Loan Calculator</h2>
+                <p className="text-white/70">Calculate your EMI and plan your finances</p>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-white font-medium mb-2">Loan Amount ({currencySymbol})</label>
+                  <input
+                    type="number"
+                    value={loanAmount}
+                    onChange={(e) => setLoanAmount(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-white/40 focus:ring-2 focus:ring-white/20 transition-all"
+                    placeholder="Enter loan amount"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white font-medium mb-2">Loan Tenure (Years)</label>
+                  <input
+                    type="number"
+                    value={loanTenure}
+                    onChange={(e) => setLoanTenure(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-white/40 focus:ring-2 focus:ring-white/20 transition-all"
+                    placeholder="Enter tenure in years"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-white font-medium mb-2">Interest Rate (%)</label>
+                  <div className="flex items-center space-x-2">
+                    <Percent className="h-5 w-5 text-white/70" />
+                    <span className="text-white text-lg font-semibold">{interestRate}%</span>
+                  </div>
+                </div>
+
+                {loanAmount && loanTenure && (
+                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-center animate-slide-up">
+                    <h3 className="text-white/80 text-sm mb-2">Monthly EMI</h3>
+                    <p className="text-3xl font-bold text-white animate-pulse">{currencySymbol}{calculateEMI().toLocaleString()}</p>
+                    <p className="text-white/60 text-sm mt-2">
+                      Total Amount: {currencySymbol}{(calculateEMI() * parseFloat(loanTenure) * 12).toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'apply' && (
+          <div className="max-w-2xl mx-auto animate-fade-in">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
+              <div className="text-center mb-8">
+                <FileText className="h-12 w-12 text-white mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-white mb-2">Loan Application</h2>
+                <p className="text-white/70">Fill out the form to apply for your loan</p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-8">
+                {/* Loan Type Selection */}
+                <div>
+                  <label className="block text-white font-medium mb-2 text-sm">Loan Type</label>
+                  <select
+                    value={selectedLoanType}
+                    onChange={(e) => setSelectedLoanType(e.target.value)}
+                    className="w-full px-2 py-1.5 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-white/40 focus:ring-2 focus:ring-white/20 transition-all"
+                  >
+                    <option value="">Select loan type</option>
+                    {loanTypes.map((loan) => (
+                      <option key={loan.id} value={loan.id} className="text-gray-900">
+                        {loan.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Personal Details Section */}
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+                    <User className="h-4 w-4 mr-2" />
+                    Personal Details
+                    <button
+                      type="button"
+                      className="ml-auto text-xs text-blue-400 hover:text-blue-300"
+                      onClick={() => {
+                        // Auto-fill from profile functionality
+                        setFormData(prev => ({
+                          ...prev,
+                          fullName: 'John Doe', // This would come from user profile
+                          phone: '+880123456789',
+                          email: 'john.doe@example.com'
+                        }));
+                      }}
+                    >
+                      Auto-fill from Profile
+                    </button>
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-white font-medium mb-1 text-sm">Full Name *</label>
+                      <input
+                        type="text"
+                        value={formData.fullName}
+                        onChange={(e) => handleInputChange('fullName', e.target.value)}
+                        className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 transition-all ${
+                          formErrors.fullName 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                        }`}
+                        placeholder="Enter your full name"
+                      />
+                      {formErrors.fullName && (
+                        <p className="text-red-400 text-xs mt-1">{formErrors.fullName}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-1 text-sm">Phone Number *</label>
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 transition-all ${
+                          formErrors.phone 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                        }`}
+                        placeholder="+880 1234 567890"
+                      />
+                      {formErrors.phone && (
+                        <p className="text-red-400 text-xs mt-1">{formErrors.phone}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-1 text-sm">Email Address *</label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 transition-all ${
+                          formErrors.email 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                        }`}
+                        placeholder="john.doe@example.com"
+                      />
+                      {formErrors.email && (
+                        <p className="text-red-400 text-xs mt-1">{formErrors.email}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-1 text-sm">Passport Number *</label>
+                      <input
+                        type="text"
+                        value={formData.passportNumber}
+                        onChange={(e) => handleInputChange('passportNumber', e.target.value)}
+                        className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 transition-all ${
+                          formErrors.passportNumber 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                        }`}
+                        placeholder="A12345678"
+                      />
+                      {formErrors.passportNumber && (
+                        <p className="text-red-400 text-xs mt-1">{formErrors.passportNumber}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-1 text-sm">NID Card Number *</label>
+                      <input
+                        type="text"
+                        value={formData.nidNumber}
+                        onChange={(e) => handleInputChange('nidNumber', e.target.value)}
+                        className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 transition-all ${
+                          formErrors.nidNumber 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                        }`}
+                        placeholder="1234567890123"
+                      />
+                      {formErrors.nidNumber && (
+                        <p className="text-red-400 text-xs mt-1">{formErrors.nidNumber}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-1 text-sm">TIN Number (Optional)</label>
+                      <input
+                        type="text"
+                        value={formData.tinNumber}
+                        onChange={(e) => handleInputChange('tinNumber', e.target.value)}
+                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
+                        placeholder="123456789012"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3">
+                    <label className="block text-white font-medium mb-1 text-sm">Address *</label>
+                    <textarea
+                      value={formData.address}
+                      onChange={(e) => handleInputChange('address', e.target.value)}
+                      rows={2}
+                      className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 transition-all ${
+                        formErrors.address 
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                          : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                      }`}
+                      placeholder="Enter your complete address"
+                    />
+                    {formErrors.address && (
+                      <p className="text-red-400 text-xs mt-1">{formErrors.address}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Employment Information Section */}
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+                    <Briefcase className="h-4 w-4 mr-2" />
+                    Employment Information
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-white font-medium mb-1 text-sm">Employment Type *</label>
+                      <select
+                        value={formData.employmentType}
+                        onChange={(e) => handleInputChange('employmentType', e.target.value)}
+                        className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white text-sm focus:outline-none focus:ring-2 transition-all ${
+                          formErrors.employmentType 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                        }`}
+                      >
+                        <option value="employed" className="text-gray-900">Employed</option>
+                        <option value="self-employed" className="text-gray-900">Self-Employed</option>
+                        <option value="business" className="text-gray-900">Business Owner</option>
+                        <option value="retired" className="text-gray-900">Retired</option>
+                        <option value="unemployed" className="text-gray-900">Unemployed</option>
+                      </select>
+                      {formErrors.employmentType && (
+                        <p className="text-red-400 text-xs mt-1">{formErrors.employmentType}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-1 text-sm">Company Name *</label>
+                      <input
+                        type="text"
+                        value={formData.companyName}
+                        onChange={(e) => handleInputChange('companyName', e.target.value)}
+                        className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 transition-all ${
+                          formErrors.companyName 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                        }`}
+                        placeholder="Enter company name"
+                      />
+                      {formErrors.companyName && (
+                        <p className="text-red-400 text-xs mt-1">{formErrors.companyName}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-1 text-sm">Designation *</label>
+                      <input
+                        type="text"
+                        value={formData.designation}
+                        onChange={(e) => handleInputChange('designation', e.target.value)}
+                        className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 transition-all ${
+                          formErrors.designation 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                        }`}
+                        placeholder="Your job title"
+                      />
+                      {formErrors.designation && (
+                        <p className="text-red-400 text-xs mt-1">{formErrors.designation}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-1 text-sm">Work Experience *</label>
+                      <select
+                        value={formData.workExperience}
+                        onChange={(e) => handleInputChange('workExperience', e.target.value)}
+                        className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white text-sm focus:outline-none focus:ring-2 transition-all ${
+                          formErrors.workExperience 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                        }`}
+                      >
+                        <option value="">Select experience</option>
+                        <option value="0-1" className="text-gray-900">0-1 years</option>
+                        <option value="1-3" className="text-gray-900">1-3 years</option>
+                        <option value="3-5" className="text-gray-900">3-5 years</option>
+                        <option value="5-10" className="text-gray-900">5-10 years</option>
+                        <option value="10+" className="text-gray-900">10+ years</option>
+                      </select>
+                      {formErrors.workExperience && (
+                        <p className="text-red-400 text-xs mt-1">{formErrors.workExperience}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-1 text-sm">Monthly Income ({currencySymbol}) *</label>
+                      <input
+                        type="number"
+                        value={formData.monthlyIncome}
+                        onChange={(e) => handleInputChange('monthlyIncome', e.target.value)}
+                        className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 transition-all ${
+                          formErrors.monthlyIncome 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                        }`}
+                        placeholder="50000"
+                      />
+                      {formErrors.monthlyIncome && (
+                        <p className="text-red-400 text-xs mt-1">{formErrors.monthlyIncome}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-1 text-sm">Monthly Expenses ({currencySymbol}) *</label>
+                      <input
+                        type="number"
+                        value={formData.monthlyExpenses}
+                        onChange={(e) => handleInputChange('monthlyExpenses', e.target.value)}
+                        className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 transition-all ${
+                          formErrors.monthlyExpenses 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                        }`}
+                        placeholder="25000"
+                      />
+                      {formErrors.monthlyExpenses && (
+                        <p className="text-red-400 text-xs mt-1">{formErrors.monthlyExpenses}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Loan Details Section */}
+                <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+                    <PiggyBank className="h-4 w-4 mr-2" />
+                    Loan Details
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-white font-medium mb-1.5 text-sm">Loan Amount ({currencySymbol}) *</label>
+                      <div className="space-y-2">
+                        <input
+                          type="range"
+                          min="10000"
+                          max="5000000"
+                          step="10000"
+                          value={formData.loanAmount}
+                          onChange={(e) => handleInputChange('loanAmount', e.target.value)}
+                          className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider"
+                        />
+                        <div className="flex justify-between text-white/70 text-xs">
+                          <span>{currencySymbol}10,000</span>
+                          <span className="font-semibold text-white">{currencySymbol}{parseInt(formData.loanAmount || '0').toLocaleString()}</span>
+                          <span>{currencySymbol}50,00,000</span>
+                        </div>
+                      </div>
+                      {formErrors.loanAmount && (
+                        <p className="text-red-400 text-xs mt-1">{formErrors.loanAmount}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-1.5 text-sm">Loan Purpose *</label>
+                      <textarea
+                        value={formData.loanPurpose}
+                        onChange={(e) => handleInputChange('loanPurpose', e.target.value)}
+                        rows={2}
+                        className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 transition-all text-sm ${
+                          formErrors.loanPurpose 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                        }`}
+                        placeholder="Describe the purpose of your loan (e.g., home renovation, business expansion, education)"
+                      />
+                      {formErrors.loanPurpose && (
+                        <p className="text-red-400 text-xs mt-1">{formErrors.loanPurpose}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-1.5 text-sm">Repayment Period *</label>
+                      <select
+                        value={formData.repaymentPeriod}
+                        onChange={(e) => handleInputChange('repaymentPeriod', e.target.value)}
+                        className={`w-full px-3 py-2 bg-white/10 border rounded-lg text-white focus:outline-none focus:ring-2 transition-all text-sm ${
+                          formErrors.repaymentPeriod 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                        }`}
+                      >
+                        {Array.from({length: 19}, (_, i) => i + 2).map(year => (
+                          <option key={year} value={year.toString()} className="text-gray-900">
+                            {year} years
+                          </option>
+                        ))}
+                      </select>
+                      {formErrors.repaymentPeriod && (
+                        <p className="text-red-400 text-xs mt-1">{formErrors.repaymentPeriod}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Document Upload Section */}
+                <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                  <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
+                    <Upload className="h-5 w-5 mr-2" />
+                    Supporting Documents
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-white font-medium mb-2">Passport Copy *</label>
+                      <div className="border-2 border-dashed border-white/30 rounded-xl p-4 text-center hover:border-white/50 transition-colors">
+                        <FileText className="h-6 w-6 text-white/70 mx-auto mb-2" />
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setFormData(prev => ({
+                                ...prev,
+                                documents: { ...prev.documents, passport: file }
+                              }));
+                            }
+                          }}
+                          className="hidden"
+                          id="passport-upload"
+                        />
+                        <label
+                          htmlFor="passport-upload"
+                          className="inline-block px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors cursor-pointer text-sm"
+                        >
+                          Choose File
+                        </label>
+                        {formData.documents.passport && (
+                          <p className="text-green-400 text-xs mt-1">{formData.documents.passport.name}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-2">NID Card Copy *</label>
+                      <div className="border-2 border-dashed border-white/30 rounded-xl p-4 text-center hover:border-white/50 transition-colors">
+                        <FileText className="h-6 w-6 text-white/70 mx-auto mb-2" />
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setFormData(prev => ({
+                                ...prev,
+                                documents: { ...prev.documents, nid: file }
+                              }));
+                            }
+                          }}
+                          className="hidden"
+                          id="nid-upload"
+                        />
+                        <label
+                          htmlFor="nid-upload"
+                          className="inline-block px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors cursor-pointer text-sm"
+                        >
+                          Choose File
+                        </label>
+                        {formData.documents.nid && (
+                          <p className="text-green-400 text-xs mt-1">{formData.documents.nid.name}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-2">Recent Photo *</label>
+                      <div className="border-2 border-dashed border-white/30 rounded-xl p-4 text-center hover:border-white/50 transition-colors">
+                        <User className="h-6 w-6 text-white/70 mx-auto mb-2" />
+                        <input
+                          type="file"
+                          accept=".jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setFormData(prev => ({
+                                ...prev,
+                                documents: { ...prev.documents, photo: file }
+                              }));
+                            }
+                          }}
+                          className="hidden"
+                          id="photo-upload"
+                        />
+                        <label
+                          htmlFor="photo-upload"
+                          className="inline-block px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors cursor-pointer text-sm"
+                        >
+                          Choose File
+                        </label>
+                        {formData.documents.photo && (
+                          <p className="text-green-400 text-xs mt-1">{formData.documents.photo.name}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-2">Bank Statement *</label>
+                      <div className="border-2 border-dashed border-white/30 rounded-xl p-4 text-center hover:border-white/50 transition-colors">
+                        <FileText className="h-6 w-6 text-white/70 mx-auto mb-2" />
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setFormData(prev => ({
+                                ...prev,
+                                documents: { ...prev.documents, bankStatement: file }
+                              }));
+                            }
+                          }}
+                          className="hidden"
+                          id="bank-statement-upload"
+                        />
+                        <label
+                          htmlFor="bank-statement-upload"
+                          className="inline-block px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors cursor-pointer text-sm"
+                        >
+                          Choose File
+                        </label>
+                        {formData.documents.bankStatement && (
+                          <p className="text-green-400 text-xs mt-1">{formData.documents.bankStatement.name}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-2">Salary Slip / Trade License *</label>
+                      <div className="border-2 border-dashed border-white/30 rounded-xl p-4 text-center hover:border-white/50 transition-colors">
+                        <FileText className="h-6 w-6 text-white/70 mx-auto mb-2" />
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setFormData(prev => ({
+                                ...prev,
+                                documents: { ...prev.documents, salarySlip: file }
+                              }));
+                            }
+                          }}
+                          className="hidden"
+                          id="salary-slip-upload"
+                        />
+                        <label
+                          htmlFor="salary-slip-upload"
+                          className="inline-block px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors cursor-pointer text-sm"
+                        >
+                          Choose File
+                        </label>
+                        {formData.documents.salarySlip && (
+                          <p className="text-green-400 text-xs mt-1">{formData.documents.salarySlip.name}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Nominee/Beneficiary Details Section */}
+                <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                  <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
+                    <Heart className="h-5 w-5 mr-2" />
+                    Nominee Details (Beneficiary)
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-white font-medium mb-2">Nominee Name (According to NID) *</label>
+                      <input
+                        type="text"
+                        value={formData.nominee.name}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          nominee: { ...prev.nominee, name: e.target.value }
+                        }))}
+                        className={`w-full px-4 py-3 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 transition-all ${
+                          formErrors.nominee?.name 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                        }`}
+                        placeholder="Enter nominee's full name"
+                      />
+                      {formErrors.nominee?.name && (
+                        <p className="text-red-400 text-sm mt-1">{formErrors.nominee.name}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-2">Relationship *</label>
+                      <select
+                        value={formData.nominee.relationship}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          nominee: { ...prev.nominee, relationship: e.target.value as any }
+                        }))}
+                        className={`w-full px-4 py-3 bg-white/10 border rounded-xl text-white focus:outline-none focus:ring-2 transition-all ${
+                          formErrors.nominee?.relationship 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                        }`}
+                      >
+                        <option value="">Select relationship</option>
+                        <option value="father" className="text-gray-900">Father</option>
+                        <option value="mother" className="text-gray-900">Mother</option>
+                        <option value="brother" className="text-gray-900">Brother</option>
+                        <option value="sister" className="text-gray-900">Sister</option>
+                        <option value="uncle" className="text-gray-900">Uncle</option>
+                        <option value="aunt" className="text-gray-900">Aunt</option>
+                        <option value="wife" className="text-gray-900">Wife</option>
+                        <option value="husband" className="text-gray-900">Husband</option>
+                        <option value="son" className="text-gray-900">Son</option>
+                        <option value="daughter" className="text-gray-900">Daughter</option>
+                        <option value="other" className="text-gray-900">Other</option>
+                      </select>
+                      {formErrors.nominee?.relationship && (
+                        <p className="text-red-400 text-sm mt-1">{formErrors.nominee.relationship}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-2">Nominee NID Number *</label>
+                      <input
+                        type="text"
+                        value={formData.nominee.nidNumber}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          nominee: { ...prev.nominee, nidNumber: e.target.value }
+                        }))}
+                        className={`w-full px-4 py-3 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 transition-all ${
+                          formErrors.nominee?.nidNumber 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                            : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                        }`}
+                        placeholder="1234567890123"
+                      />
+                      {formErrors.nominee?.nidNumber && (
+                        <p className="text-red-400 text-sm mt-1">{formErrors.nominee.nidNumber}</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <label className="block text-white font-medium mb-2">Nominee Address (According to NID) *</label>
+                    <textarea
+                      value={formData.nominee.address}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        nominee: { ...prev.nominee, address: e.target.value }
+                      }))}
+                      rows={3}
+                      className={`w-full px-4 py-3 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 transition-all ${
+                        formErrors.nominee?.address 
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
+                          : 'border-white/20 focus:border-white/40 focus:ring-white/20'
+                      }`}
+                      placeholder="Enter nominee's complete address"
+                    />
+                    {formErrors.nominee?.address && (
+                      <p className="text-red-400 text-sm mt-1">{formErrors.nominee.address}</p>
+                    )}
+                  </div>
+                  
+                  <div className="mt-4">
+                    <h4 className="text-lg font-medium text-white mb-3">Nominee Documents</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-white font-medium mb-2">Nominee NID/Passport Copy *</label>
+                        <div className="border-2 border-dashed border-white/30 rounded-xl p-4 text-center hover:border-white/50 transition-colors">
+                          <FileText className="h-6 w-6 text-white/70 mx-auto mb-2" />
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  nominee: {
+                                    ...prev.nominee,
+                                    documents: { ...prev.nominee.documents, nidOrPassport: file }
+                                  }
+                                }));
+                              }
+                            }}
+                            className="hidden"
+                            id="nominee-nid-upload"
+                          />
+                          <label
+                            htmlFor="nominee-nid-upload"
+                            className="inline-block px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors cursor-pointer text-sm"
+                          >
+                            Choose File
+                          </label>
+                          {formData.nominee.documents.nidOrPassport && (
+                            <p className="text-green-400 text-xs mt-1">{formData.nominee.documents.nidOrPassport.name}</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-white font-medium mb-2">Nominee Photo *</label>
+                        <div className="border-2 border-dashed border-white/30 rounded-xl p-4 text-center hover:border-white/50 transition-colors">
+                          <User className="h-6 w-6 text-white/70 mx-auto mb-2" />
+                          <input
+                            type="file"
+                            accept=".jpg,.jpeg,.png"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  nominee: {
+                                    ...prev.nominee,
+                                    documents: { ...prev.nominee.documents, photo: file }
+                                  }
+                                }));
+                              }
+                            }}
+                            className="hidden"
+                            id="nominee-photo-upload"
+                          />
+                          <label
+                            htmlFor="nominee-photo-upload"
+                            className="inline-block px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors cursor-pointer text-sm"
+                          >
+                            Choose File
+                          </label>
+                          {formData.nominee.documents.photo && (
+                            <p className="text-green-400 text-xs mt-1">{formData.nominee.documents.photo.name}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="terms"
+                    checked={formData.termsAccepted}
+                    onChange={(e) => handleInputChange('termsAccepted', e.target.checked)}
+                    className="w-5 h-5 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="terms" className="text-white/70">
+                    I agree to the terms and conditions and privacy policy
+                  </label>
+                </div>
+                {formErrors.termsAccepted && (
+                  <p className="text-red-400 text-sm">{formErrors.termsAccepted}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="h-5 w-5" />
+                      <span>Submit Application</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'status' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="text-center mb-8">
+              <FileCheck className="h-12 w-12 text-white mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-2">My Applications</h2>
+              <p className="text-white/70">Track your loan application status</p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Sample Application Status */}
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">Personal Loan Application</h3>
+                    <p className="text-white/60">Application ID: PL2024001</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+                    <span className="text-yellow-400 font-medium">Under Review</span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <p className="text-white/60 text-sm">Amount</p>
+                    <p className="text-white font-semibold">{currencySymbol}5,00,000</p>
+                  </div>
+                  <div>
+                    <p className="text-white/60 text-sm">Applied Date</p>
+                    <p className="text-white font-semibold">Dec 15, 2024</p>
+                  </div>
+                  <div>
+                    <p className="text-white/60 text-sm">Expected Approval</p>
+                    <p className="text-white font-semibold">Dec 22, 2024</p>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm text-white/60 mb-2">
+                    <span>Application Progress</span>
+                    <span>60%</span>
+                  </div>
+                  <div className="w-full bg-white/20 rounded-full h-2">
+                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                  </div>
+                </div>
+
+                {/* Status Steps */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                      <Check className="h-4 w-4 text-white" />
+                    </div>
+                    <span className="text-green-400 text-sm">Submitted</span>
+                  </div>
+                  <div className="flex-1 h-0.5 bg-green-500 mx-2"></div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center animate-pulse">
+                      <Loader2 className="h-4 w-4 text-white animate-spin" />
+                    </div>
+                    <span className="text-yellow-400 text-sm">Review</span>
+                  </div>
+                  <div className="flex-1 h-0.5 bg-white/20 mx-2"></div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                      <span className="text-white/60 text-xs">3</span>
+                    </div>
+                    <span className="text-white/60 text-sm">Approval</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* No Applications Message */}
+              <div className="bg-white/5 backdrop-blur-md rounded-2xl p-8 border border-white/10 text-center">
+                <FileX className="h-16 w-16 text-white/30 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-white/70 mb-2">No Other Applications</h3>
+                <p className="text-white/50 mb-4">You don't have any other loan applications at the moment.</p>
+                <button
+                  onClick={() => setActiveTab('apply')}
+                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105"
+                >
+                  Apply for New Loan
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Custom CSS Animations */}
+      <style>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.6s ease-out;
+        }
+
+        .animate-slide-up {
+          animation: slide-up 0.8s ease-out;
+        }
+
+        .delay-100 {
+          animation-delay: 0.1s;
+        }
+
+        .hover\\:scale-102:hover {
+          transform: scale(1.02);
+        }
+
+        .hover\\:scale-105:hover {
+          transform: scale(1.05);
+        }
+
+        .hover\\:scale-110:hover {
+          transform: scale(1.1);
+        }
+      `}</style>
+
+      {/* Loan Application Modal */}
+      {applicationData && (
+        <LoanApplicationModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          applicationData={applicationData}
+          onTrackStatus={() => {
+            setShowModal(false);
+            setActiveTab('status');
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+export default LoanServices;

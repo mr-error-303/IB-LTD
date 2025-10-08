@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Approval Dashboard - Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1976d2;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: white;
+            transition: background-color 0.2s;
+        }
+        
+        .tab.active {
+            background: #1976d2;
+            color: white;
+        }
+        
+        .tab:hover:not(.active) {
+            background: #f0f0f0;
+        }
+        
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-group label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .filter-group input, .filter-group select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .flagged-yes {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .flagged-no {
+            color: #28a745;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .btn-approve {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-reject {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn:hover {
+            opacity: 0.8;
+        }
+        
+        .high-value {
+            background: #fff3cd !important;
+        }
+        
+        .international {
+            background: #cce5ff !important;
+        }
+        
+        .suspicious {
+            background: #f8d7da !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>Transaction Approval Dashboard</h1>
+            <p>Monitor and approve pending transactions with automatic fraud detection</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="pendingCount">0</div>
+                <div class="stat-label">Pending Transactions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="flaggedCount">0</div>
+                <div class="stat-label">Flagged for Review</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="approvedToday">0</div>
+                <div class="stat-label">Approved Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="rejectedToday">0</div>
+                <div class="stat-label">Rejected Today</div>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('pending')">Pending (5)</button>
+            <button class="tab" onclick="switchTab('approved')">Approved (12)</button>
+            <button class="tab" onclick="switchTab('rejected')">Rejected (3)</button>
+            <button class="tab" onclick="switchTab('all')">All (20)</button>
+        </div>
+        
+        <div class="filters">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label>Search</label>
+                    <input type="text" id="searchFilter" placeholder="Transaction ID, Account..." onkeyup="applyFilters()">
+                </div>
+                <div class="filter-group">
+                    <label>Min Amount</label>
+                    <input type="number" id="minAmount" placeholder="0" onchange="applyFilters()">
+                </div>
+                <div class="filter-group">
+                    <label>Max Amount</label>
+                    <input type="number" id="maxAmount" placeholder="100000" onchange="applyFilters()">
+                </div>
+                <div class="filter-group">
+                    <label>Type</label>
+                    <select id="typeFilter" onchange="applyFilters()">
+                        <option value="">All Types</option>
+                        <option value="Transfer">Transfer</option>
+                        <option value="Wire">Wire</option>
+                        <option value="ACH">ACH</option>
+                        <option value="International">International</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Transaction ID</th>
+                        <th>Amount</th>
+                        <th>Type</th>
+                        <th>From Account</th>
+                        <th>To Account</th>
+                        <th>Status</th>
+                        <th>Flagged</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="transactionTable">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Mock transaction data with automatic flagging
+        const mockTransactions = [
+            {
+                id: 'TXN001',
+                amount: 25000,
+                type: 'Wire',
+                from: 'ACC-12345',
+                to: 'International Bank - ACC-98765',
+                status: 'pending',
+                timestamp: new Date(),
+                flagged: true, // High value + International
+                flagReason: 'High value international transfer'
+            },
+            {
+                id: 'TXN002',
+                amount: 500,
+                type: 'Transfer',
+                from: 'ACC-23456',
+                to: 'ACC-34567',
+                status: 'pending',
+                timestamp: new Date(),
+                flagged: false
+            },
+            {
+                id: 'TXN003',
+                amount: 15000,
+                type: 'ACH',
+                from: 'ACC-34567',
+                to: 'Suspicious Account - ACC-11111',
+                status: 'pending',
+                timestamp: new Date(),
+                flagged: true, // High value + Suspicious account
+                flagReason: 'High value to suspicious account'
+            },
+            {
+                id: 'TXN004',
+                amount: 750,
+                type: 'Transfer',
+                from: 'ACC-45678',
+                to: 'ACC-56789',
+                status: 'approved',
+                timestamp: new Date(),
+                flagged: false
+            },
+            {
+                id: 'TXN005',
+                amount: 50000,
+                type: 'International',
+                from: 'ACC-56789',
+                to: 'Offshore Bank - ACC-99999',
+                status: 'pending',
+                timestamp: new Date(),
+                flagged: true, // Very high value + International + Offshore
+                flagReason: 'Very high value offshore transfer'
+            },
+            {
+                id: 'TXN006',
+                amount: 1200,
+                type: 'Wire',
+                from: 'ACC-67890',
+                to: 'ACC-78901',
+                status: 'rejected',
+                timestamp: new Date(),
+                flagged: false
+            },
+            {
+                id: 'TXN007',
+                amount: 8500,
+                type: 'Transfer',
+                from: 'Suspicious Account - ACC-22222',
+                to: 'ACC-89012',
+                status: 'pending',
+                timestamp: new Date(),
+                flagged: true, // From suspicious account
+                flagReason: 'Transfer from suspicious account'
+            },
+            {
+                id: 'TXN008',
+                amount: 300,
+                type: 'ACH',
+                from: 'ACC-90123',
+                to: 'ACC-01234',
+                status: 'approved',
+                timestamp: new Date(),
+                flagged: false
+            }
+        ];
+
+        let currentTab = 'pending';
+        let filteredTransactions = [];
+
+        function initializeDashboard() {
+            updateStats();
+            switchTab('pending');
+        }
+
+        function updateStats() {
+            const pending = mockTransactions.filter(t => t.status === 'pending').length;
+            const flagged = mockTransactions.filter(t => t.flagged).length;
+            const approvedToday = mockTransactions.filter(t => t.status === 'approved').length;
+            const rejectedToday = mockTransactions.filter(t => t.status === 'rejected').length;
+
+            document.getElementById('pendingCount').textContent = pending;
+            document.getElementById('flaggedCount').textContent = flagged;
+            document.getElementById('approvedToday').textContent = approvedToday;
+            document.getElementById('rejectedToday').textContent = rejectedToday;
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Update tab appearance
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            applyFilters();
+        }
+
+        function applyFilters() {
+            let transactions = mockTransactions;
+            
+            // Filter by tab
+            if (currentTab !== 'all') {
+                transactions = transactions.filter(t => t.status === currentTab);
+            }
+            
+            // Apply search filter
+            const search = document.getElementById('searchFilter').value.toLowerCase();
+            if (search) {
+                transactions = transactions.filter(t => 
+                    t.id.toLowerCase().includes(search) ||
+                    t.from.toLowerCase().includes(search) ||
+                    t.to.toLowerCase().includes(search)
+                );
+            }
+            
+            // Apply amount filters
+            const minAmount = parseFloat(document.getElementById('minAmount').value) || 0;
+            const maxAmount = parseFloat(document.getElementById('maxAmount').value) || Infinity;
+            transactions = transactions.filter(t => t.amount >= minAmount && t.amount <= maxAmount);
+            
+            // Apply type filter
+            const typeFilter = document.getElementById('typeFilter').value;
+            if (typeFilter) {
+                transactions = transactions.filter(t => t.type === typeFilter);
+            }
+            
+            filteredTransactions = transactions;
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('transactionTable');
+            tbody.innerHTML = '';
+            
+            filteredTransactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                
+                // Add special styling for flagged transactions
+                if (transaction.flagged) {
+                    if (transaction.amount >= 10000) row.classList.add('high-value');
+                    if (transaction.from.includes('International') || transaction.to.includes('International') || 
+                        transaction.from.includes('Offshore') || transaction.to.includes('Offshore')) {
+                        row.classList.add('international');
+                    }
+                    if (transaction.from.includes('Suspicious') || transaction.to.includes('Suspicious')) {
+                        row.classList.add('suspicious');
+                    }
+                }
+                
+                row.innerHTML = `
+                    <td>${transaction.id}</td>
+                    <td>$${transaction.amount.toLocaleString()}</td>
+                    <td>${transaction.type}</td>
+                    <td>${transaction.from}</td>
+                    <td>${transaction.to}</td>
+                    <td><span class="status-${transaction.status}">${transaction.status.toUpperCase()}</span></td>
+                    <td><span class="flagged-${transaction.flagged ? 'yes' : 'no'}">${transaction.flagged ? 'Yes' : 'No'}</span></td>
+                    <td>
+                        ${transaction.status === 'pending' ? `
+                            <div class="action-buttons">
+                                <button class="btn btn-approve" onclick="approveTransaction('${transaction.id}')">Approve</button>
+                                <button class="btn btn-reject" onclick="rejectTransaction('${transaction.id}')">Reject</button>
+                            </div>
+                        ` : '-'}
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        function approveTransaction(id) {
+            const transaction = mockTransactions.find(t => t.id === id);
+            if (transaction) {
+                transaction.status = 'approved';
+                updateStats();
+                applyFilters();
+                alert(`Transaction ${id} approved successfully!`);
+            }
+        }
+
+        function rejectTransaction(id) {
+            const transaction = mockTransactions.find(t => t.id === id);
+            if (transaction) {
+                transaction.status = 'rejected';
+                updateStats();
+                applyFilters();
+                alert(`Transaction ${id} rejected successfully!`);
+            }
+        }
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', initializeDashboard);
+    </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+[build]
+  command = "cd customer-portal && npm run build"
+  publish = "customer-portal/build"
+  functions = "netlify/functions"
+  base = "."
+
+[build.environment]
+  REACT_APP_API_URL = "https://international-bank-limited.netlify.app/api"
+
+# Admin Panel Backend Functions
+[[redirects]]
+  from = "/admin-api/*"
+  to = "/.netlify/functions/admin-api/:splat"
+  status = 200
+
+# Main API redirects
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# SPA redirects
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
