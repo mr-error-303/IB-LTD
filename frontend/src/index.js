@@ -5,8 +5,8 @@ import axios from 'axios';
 
 // Set up axios defaults
 axios.defaults.baseURL = process.env.NODE_ENV === 'production' 
-  ? '/.netlify/functions' 
-  : 'http://localhost:5000';
+  ? '/.netlify/functions/api' 
+  : 'http://localhost:5001/api';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
 // Add request interceptor for debugging (only in development)
