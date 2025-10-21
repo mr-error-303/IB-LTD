@@ -46,10 +46,22 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const path = event.path.replace('/.netlify/functions/api', '');
+    // Handle both direct function calls and redirected API calls
+    let path = event.path;
+    if (path.startsWith('/.netlify/functions/api')) {
+      path = path.replace('/.netlify/functions/api', '');
+    } else if (path.startsWith('/api')) {
+      path = path.replace('/api', '');
+    }
+    
+    // Ensure path starts with / if not empty
+    if (path && !path.startsWith('/')) {
+      path = '/' + path;
+    }
+    
     const method = event.httpMethod;
     
-    console.log(`API Request: ${method} ${path}`);
+    console.log(`API Request: ${method} ${path} (original: ${event.path})`);
 
     // Health check endpoints
     if (path === '/health' || path === '/' || path === '') {
