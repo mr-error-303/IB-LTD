@@ -211,7 +211,9 @@ exports.handler = async (event, context) => {
     }
 
     // Admin authentication endpoint
+    console.log(`Checking admin endpoint: path="${path}", method="${method}", condition: ${path === '/admin/auth/login' && method === 'POST'}`);
     if (path === '/admin/auth/login' && method === 'POST') {
+      console.log('Admin endpoint matched!');
       const body = JSON.parse(event.body || '{}');
       const { email, password, adminKey } = body;
 
