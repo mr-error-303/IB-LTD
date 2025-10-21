@@ -90,62 +90,45 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password, adminKey = null) => {
     try {
-      // First try admin login if this looks like an admin email or if regular login fails
       let response;
       let isAdminLogin = false;
       
       // Check if this is likely an admin login (admin email or specific credentials)
       if (email.includes('admin') || email === 'admin@ibltd.com' || adminKey) {
-        try {
-          const adminPayload = {
-            email,
-            password
-          };
-          
-          // Add adminKey if provided
-          if (adminKey) {
-            adminPayload.adminKey = adminKey;
-          } else {
-            // Default admin key for backward compatibility
-            adminPayload.adminKey = 'admin123';
-          }
-          
-          // Create admin API instance for login
-          const adminApiInstance = axios.create({
-            baseURL: process.env.NODE_ENV === 'production' 
-              ? '/.netlify/functions/admin-api' 
-              : '/api'
-          });
-          
-          response = await adminApiInstance.post('/admin/auth/login', adminPayload);
-          isAdminLogin = true;
-        } catch (adminError) {
-          // If admin login fails, fall back to regular login
-          console.log('Admin login failed, trying regular login');
-          response = await axios.post('/auth/login', {
-            email,
-            password
-          });
+        const adminPayload = {
+          email,
+          password
+        };
+        
+        // Add adminKey if provided
+        if (adminKey) {
+          adminPayload.adminKey = adminKey;
+        } else {
+          // Default admin key for backward compatibility
+          adminPayload.adminKey = 'admin123';
         }
+        
+        // Create admin API instance for login
+        const adminApiInstance = axios.create({
+          baseURL: process.env.NODE_ENV === 'production' 
+            ? '/.netlify/functions/admin-api' 
+            : 'http://localhost:5001/api'
+        });
+        
+        response = await adminApiInstance.post('/admin/auth/login', adminPayload);
+        isAdminLogin = true;
       } else {
-        // Try regular login first
-        try {
-          response = await axios.post('/api/auth/login', {
-            email,
-            password
-          });
-        } catch (regularError) {
-          // If regular login fails and error suggests admin access, try admin login
-          if (regularError.response?.status === 403 || regularError.response?.data?.message?.includes('admin')) {
-            response = await axios.post('/api/admin/auth/login', {
-              email,
-              password
-            });
-            isAdminLogin = true;
-          } else {
-            throw regularError;
-          }
-        }
+        // Regular user login using main API
+        const apiInstance = axios.create({
+          baseURL: process.env.NODE_ENV === 'production' 
+            ? '/.netlify/functions/api' 
+            : 'http://localhost:5001/api'
+        });
+        
+        response = await apiInstance.post('/auth/login', {
+          email,
+          password
+        });
       }
 
       const { token: newToken, user: userData } = response.data;
