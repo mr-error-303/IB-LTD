@@ -7,6 +7,7 @@ const AdminLogin = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    adminKey: '',
     twoFactorCode: ''
   });
   const [errors, setErrors] = useState({});
@@ -57,6 +58,10 @@ const AdminLogin = () => {
       newErrors.password = 'Password must be at least 6 characters';
     }
 
+    if (!formData.adminKey) {
+      newErrors.adminKey = 'Admin key is required';
+    }
+
     if (showTwoFactor && !formData.twoFactorCode) {
       newErrors.twoFactorCode = 'Two-factor authentication code is required';
     }
@@ -77,38 +82,12 @@ const AdminLogin = () => {
 
     try {
       if (!showTwoFactor) {
-        // First step: email and password using the API service
-        const data = await authAPI.adminLogin({
-          email: formData.email,
-          password: formData.password
-        });
-
-        if (data.success) {
-          if (data.requiresTwoFactor) {
-            setShowTwoFactor(true);
-            setTempToken(data.tempToken);
-            setMessage('Please enter your two-factor authentication code');
-          } else {
-            // Login successful without 2FA - store token and update auth context
-            localStorage.setItem('token', data.token);
-            
-            // Update auth context with user data
-            try {
-              const userResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/auth/me`, {
-                headers: {
-                  'Authorization': `Bearer ${data.token}`
-                }
-              });
-              const userData = await userResponse.json();
-            } catch (userError) {
-              console.error('Error fetching user data:', userError);
-            }
-            
-            // Redirect to admin dashboard
-            navigate('/admin');
-          }
+        // Use AuthContext login to ensure app auth state is updated
+        const result = await login(formData.email, formData.password, formData.adminKey);
+        if (result?.success) {
+          navigate(result.isAdmin ? '/admin' : '/dashboard');
         } else {
-          setErrors({ general: data.message || 'Login failed' });
+          setErrors({ general: result?.error || 'Login failed' });
         }
       } else {
         // Second step: two-factor authentication
@@ -126,19 +105,15 @@ const AdminLogin = () => {
         const data = await response.json();
 
         if (response.ok) {
-          // 2FA verification successful - store token and update auth context
+          // 2FA verification successful - store token
           localStorage.setItem('token', data.token);
-          
-          // Update auth context with user data
-          const userResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/auth/me`, {
-            headers: {
-              'Authorization': `Bearer ${data.token}`
-            }
-          });
-          const userData = await userResponse.json();
-          
-          // Redirect to admin dashboard
-          navigate('/admin');
+          // After 2FA, reuse login to populate context state
+          const relogin = await login(formData.email, formData.password);
+          if (relogin?.success) {
+            navigate('/admin');
+          } else {
+            setErrors({ general: relogin?.error || 'Login failed after 2FA' });
+          }
         } else {
           setErrors({ twoFactorCode: data.message || '2FA verification failed' });
         }
@@ -231,6 +206,25 @@ const AdminLogin = () => {
                   />
                   {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
                 </div>
+
+                <div className="mb-6">
+                  <label htmlFor="adminKey" className="block text-sm font-medium text-gray-700 mb-2">
+                    Admin Key
+                  </label>
+                  <input
+                    id="adminKey"
+                    name="adminKey"
+                    type="password"
+                    required
+                    className={`appearance-none relative block w-full px-3 py-3 border ${
+                      errors.adminKey ? 'border-red-300' : 'border-gray-300'
+                    } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                    placeholder="Enter admin key"
+                    value={formData.adminKey}
+                    onChange={handleChange}
+                  />
+                  {errors.adminKey && <p className="mt-1 text-sm text-red-600">{errors.adminKey}</p>}
+                </div>
               </>
             ) : (
               <div className="mb-6">
@@ -261,37 +255,29 @@ const AdminLogin = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                {loading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    {showTwoFactor ? 'Verifying...' : 'Signing in...'}
-                  </div>
-                ) : (
-                  showTwoFactor ? 'Verify Code' : 'Sign In'
-                )}
+                {loading ? 'Signing In...' : (showTwoFactor ? 'Verify Code' : 'Sign In')}
               </button>
-
               {showTwoFactor && (
                 <button
                   type="button"
                   onClick={handleBackToLogin}
-                  className="w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                  className="group relative w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
                 >
-                  Back to Login
+                  Back to login
                 </button>
               )}
             </div>
-          </div>
 
-          <div className="text-center">
-            <Link
-              to="/login"
-              className="text-blue-200 hover:text-white text-sm transition-colors duration-200"
-            >
-              ← Back to User Login
-            </Link>
+            <div className="mt-6">
+              <p className="text-sm text-gray-600">
+                Not an admin?{' '}
+                <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+                  Go to user login
+                </Link>
+              </p>
+            </div>
           </div>
         </form>
       </div>

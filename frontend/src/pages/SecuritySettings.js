@@ -37,21 +37,11 @@ import {
 import {
   Security,
   Shield,
-  Lock,
-  VpnKey,
   Warning,
   CheckCircle,
-  Settings,
   Refresh,
   Save,
-  ExpandMore,
-  Delete,
-  Add,
-  Edit,
-  Visibility,
-  VisibilityOff,
-  CloudUpload,
-  Download
+  CloudUpload
 } from '@mui/icons-material';
 
 const SecuritySettings = () => {

@@ -16,7 +16,6 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { 
   Search, 
-  Filter, 
   RefreshCw, 
   Phone, 
   DollarSign, 
@@ -28,6 +27,10 @@ import {
   Users,
   Clock
 } from 'lucide-react';
+
+
+
+
 
 interface TopupTransaction {
   id: string;
@@ -303,7 +306,7 @@ const MobileTopupControls: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs defaultValue="transactions" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="transactions">Transaction Log</TabsTrigger>
           <TabsTrigger value="limits">User Limits</TabsTrigger>
@@ -588,6 +591,15 @@ const MobileTopupControls: React.FC = () => {
       </Tabs>
     </div>
   );
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
 };
 
 export default MobileTopupControls;
+
+
+export default MobileTopupControls;
+

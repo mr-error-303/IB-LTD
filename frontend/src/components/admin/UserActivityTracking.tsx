@@ -12,7 +12,6 @@ import {
   Download,
   Eye,
   Ban,
-  CheckCircle,
   XCircle
 } from 'lucide-react';
 

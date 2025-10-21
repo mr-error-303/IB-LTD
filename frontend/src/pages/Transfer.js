@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 import TransactionConfirmation from '../components/TransactionConfirmation';
-import { validateAmount, validateAccountNumber, validateDescription } from '../utils/inputValidation';
 
 const Transfer = () => {
   const { user } = useAuth();

@@ -16,7 +16,6 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { 
   Search, 
-  Filter, 
   RefreshCw, 
   MapPin, 
   DollarSign, 
@@ -25,7 +24,6 @@ import {
   XCircle,
   Settings,
   TrendingUp,
-  Users,
   Clock,
   Building,
   Shield
@@ -380,7 +378,7 @@ const CashWithdrawalManagement: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="requests">Withdrawal Requests</TabsTrigger>
           <TabsTrigger value="limits">ATM/Agent Limits</TabsTrigger>

@@ -59,9 +59,7 @@ import {
   Delete,
   Edit,
   Add,
-  CheckCircle,
-  Warning,
-  Error,
+
   Info
 } from '@mui/icons-material';
 
@@ -169,7 +167,7 @@ const SystemSettings = () => {
     }
   });
 
-  const [systemInfo, setSystemInfo] = useState({
+  const [systemInfo] = useState({
     version: '2.1.0',
     uptime: '15 days, 3 hours',
     lastUpdate: '2024-01-15 10:30:00',

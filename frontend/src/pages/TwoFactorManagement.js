@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Paper,
@@ -37,9 +37,6 @@ import {
   Divider,
   Switch,
   FormControlLabel,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Tabs,
   Tab,
   Avatar,
@@ -47,57 +44,32 @@ import {
   FormGroup,
   Checkbox,
   Slider,
-  RadioGroup,
-  Radio,
-  FormLabel,
 } from '@mui/material';
 import {
   Security as SecurityIcon,
   PhoneAndroid as PhoneIcon,
   Email as EmailIcon,
   Sms as SmsIcon,
-  QrCode as QrCodeIcon,
   Key as KeyIcon,
-  Shield as ShieldIcon,
   Warning as WarningIcon,
   CheckCircle as CheckIcon,
-  Cancel as CancelIcon,
   Settings as SettingsIcon,
   Refresh as RefreshIcon,
   FilterList as FilterIcon,
   Person as PersonIcon,
-  AdminPanelSettings as AdminIcon,
-  Business as BusinessIcon,
-  VpnKey as VpnKeyIcon,
   Lock as LockIcon,
   LockOpen as UnlockIcon,
   Visibility as ViewIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Add as AddIcon,
-  Download as DownloadIcon,
-  Upload as UploadIcon,
   Backup as BackupIcon,
-  Restore as RestoreIcon,
-  ExpandMore as ExpandMoreIcon,
-  Info as InfoIcon,
-  NotificationsActive as NotificationIcon,
-  Schedule as ScheduleIcon,
-  History as HistoryIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
 } from '@mui/icons-material';
-import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 
 const TwoFactorManagement = () => {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState({});
-  const [settings, setSettings] = useState({});
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -126,7 +98,7 @@ const TwoFactorManagement = () => {
   });
 
   // Fetch 2FA data
-  const fetch2FAData = async () => {
+  const fetch2FAData = useCallback(async () => {
     try {
       setLoading(true);
       const params = {
@@ -153,7 +125,6 @@ const TwoFactorManagement = () => {
       }
 
       if (settingsResponse.data.success) {
-        setSettings(settingsResponse.data.data);
         setGlobalSettings(settingsResponse.data.data.settings);
       }
     } catch (error) {
@@ -162,11 +133,11 @@ const TwoFactorManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, rowsPerPage, filters]);
 
   useEffect(() => {
     fetch2FAData();
-  }, [page, rowsPerPage, filters]);
+  }, [fetch2FAData]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -284,15 +255,7 @@ const TwoFactorManagement = () => {
     }
   };
 
-  const getMethodColor = (method) => {
-    switch (method) {
-      case 'app': return 'success';
-      case 'sms': return 'warning';
-      case 'email': return 'info';
-      case 'backup': return 'secondary';
-      default: return 'default';
-    }
-  };
+
 
   const getStatusColor = (enabled, verified) => {
     if (!enabled) return 'error';

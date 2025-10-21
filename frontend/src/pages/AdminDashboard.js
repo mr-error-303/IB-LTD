@@ -38,6 +38,7 @@ const AdminDashboard = () => {
   const { user } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('overview');
   const [users, setUsers] = useState([]);
+  const [pendingUsers, setPendingUsers] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
@@ -143,6 +144,38 @@ const AdminDashboard = () => {
             { id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com', accountNumber: '1001', balance: 5000, status: 'active' },
             { id: 2, firstName: 'Jane', lastName: 'Smith', email: 'jane@example.com', accountNumber: '1002', balance: 7500, status: 'active' },
             { id: 3, firstName: 'Bob', lastName: 'Johnson', email: 'bob@example.com', accountNumber: '1003', balance: 2300, status: 'suspended' }
+          ]);
+        }
+
+        // Fetch pending users
+        const pendingUsersResponse = await fetch('/api/admin/pending-users', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (pendingUsersResponse.ok) {
+          const pendingUsersData = await pendingUsersResponse.json();
+          setPendingUsers(pendingUsersData);
+        } else {
+          // Simulate pending users data
+          setPendingUsers([
+            { 
+              fullName: 'Alice Johnson', 
+              email: 'alice@example.com', 
+              phone: '12345678901',
+              accountNumber: 'IB-12345678', 
+              createdAt: new Date('2024-01-15'),
+              status: 'pending_approval'
+            },
+            { 
+              fullName: 'Mike Wilson', 
+              email: 'mike@example.com', 
+              phone: '09876543210',
+              accountNumber: 'IB-87654321', 
+              createdAt: new Date('2024-01-16'),
+              status: 'pending_approval'
+            }
           ]);
         }
 
@@ -261,6 +294,57 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleApproveUser = async (accountNumber) => {
+    try {
+      const response = await fetch('/api/admin/approve-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ accountNumber })
+      });
+
+      if (response.ok) {
+        // Remove from pending users
+        setPendingUsers(pendingUsers.filter(user => user.accountNumber !== accountNumber));
+        alert('User approved successfully!');
+      } else {
+        throw new Error('Failed to approve user');
+      }
+    } catch (error) {
+      console.error('Error approving user:', error);
+      alert('Failed to approve user. Please try again.');
+    }
+  };
+
+  const handleRejectUser = async (accountNumber) => {
+    const reason = prompt('Please provide a reason for rejection:');
+    if (!reason) return;
+
+    try {
+      const response = await fetch('/api/admin/reject-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ accountNumber, reason })
+      });
+
+      if (response.ok) {
+        // Remove from pending users
+        setPendingUsers(pendingUsers.filter(user => user.accountNumber !== accountNumber));
+        alert('User rejected successfully!');
+      } else {
+        throw new Error('Failed to reject user');
+      }
+    } catch (error) {
+      console.error('Error rejecting user:', error);
+      alert('Failed to reject user. Please try again.');
+    }
+  };
+
   if (user?.role !== 'admin') {
     return (
       <div className="min-h-screen bg-gray-100">
@@ -365,6 +449,7 @@ const AdminDashboard = () => {
             <nav className="-mb-px flex space-x-8 px-6">
               {[
                 { id: 'overview', name: 'Overview', icon: '📊' },
+                { id: 'pending-registrations', name: 'Pending Registrations', icon: '👤' },
                 { id: 'users', name: 'Users', icon: '👥' },
                 { id: 'transactions', name: 'Transactions', icon: '💳' },
                 { id: 'statistics', name: 'Statistics', icon: '📈' },
@@ -548,6 +633,90 @@ const AdminDashboard = () => {
                     />
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Pending Registrations Tab */}
+            {activeTab === 'pending-registrations' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <h2 className="text-xl font-semibold text-gray-900">Pending Registrations</h2>
+                  <div className="text-sm text-gray-600">
+                    {pendingUsers?.length || 0} pending approval{(pendingUsers?.length || 0) !== 1 ? 's' : ''}
+                  </div>
+                </div>
+
+                {pendingUsers && pendingUsers.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Name
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Email
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Phone
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Account Number
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Registration Date
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {pendingUsers.map((user, index) => (
+                          <tr key={user.accountNumber || index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {user.fullName || user.name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {user.email}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {user.phone}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+                              {user.accountNumber}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {new Date(user.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                              <button
+                                onClick={() => handleApproveUser(user.accountNumber)}
+                                className="bg-green-600 text-white px-3 py-1 rounded-md hover:bg-green-700 transition-colors"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleRejectUser(user.accountNumber)}
+                                className="bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700 transition-colors"
+                              >
+                                Reject
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No pending registrations</h3>
+                    <p className="mt-1 text-sm text-gray-500">All user registrations have been processed.</p>
+                  </div>
+                )}
               </div>
             )}
 

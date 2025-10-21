@@ -36,7 +36,7 @@ const AdminLogin: React.FC = () => {
 
       for (const baseUrl of possibleUrls) {
         try {
-          const loginEndpoint = `${baseUrl}/admin/auth/login`;
+          const loginEndpoint = `${baseUrl}/api/admin/auth/login`;
           
           const response = await fetch(loginEndpoint, {
             method: 'POST',

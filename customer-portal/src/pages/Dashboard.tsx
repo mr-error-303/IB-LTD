@@ -15,7 +15,6 @@ import {
   Ticket,
   Banknote,
   Receipt,
-  ArrowDownLeft,
   Globe,
   MoreHorizontal,
   Building2,
@@ -23,7 +22,6 @@ import {
   Zap,
   MapPin,
   Shield,
-  PiggyBank,
   X,
   ChevronRight,
   HandCoins,
@@ -107,7 +105,7 @@ const Dashboard: React.FC = () => {
           }
           break;
         case 'credit_score_updated':
-          setNotifications(prev => [...prev, `📊 Your credit score has been updated to ${data.data?.creditScore || 'N/A'}`]);
+          setNotifications(prev => [...prev, `📈 Your credit score has been updated to ${data.data?.creditScore || 'N/A'}`]);
           break;
         case 'account_status_changed':
           setNotifications(prev => [...prev, `🔄 Your account status has been updated to: ${data.data?.status || 'N/A'}`]);
@@ -611,6 +609,18 @@ const Dashboard: React.FC = () => {
               </div>
 
               <div
+                onClick={() => handleServiceClick('add-money')}
+                className="flex flex-col items-center p-4 hover:bg-gray-50 rounded-2xl transition-all duration-300 cursor-pointer group"
+              >
+                <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-full p-4 mb-4 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md">
+                  <DollarSign className="h-8 w-8 text-green-600" />
+                </div>
+                <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">Add</h4>
+                <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">Money</h4>
+                <p className="text-gray-500 text-xs text-center mt-1">Deposit Funds</p>
+              </div>
+
+              <div
                 onClick={() => handleServiceClick('fund-transfer')}
                 className="flex flex-col items-center p-4 hover:bg-gray-50 rounded-2xl transition-all duration-300 cursor-pointer group"
               >
@@ -633,10 +643,16 @@ const Dashboard: React.FC = () => {
                 <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">Top Up</h4>
                 <p className="text-gray-500 text-xs text-center mt-1">Recharge</p>
               </div>
+            </div>
+          </div>
 
+          {/* Second Row - Secondary Services */}
+          <div className="bg-white rounded-3xl p-6 shadow-lg">
+            <div className="grid grid-cols-4 gap-6">
               <div
                 onClick={() => handleServiceClick('buy-ticket')}
                 className="flex flex-col items-center p-4 hover:bg-gray-50 rounded-2xl transition-all duration-300 cursor-pointer group"
+                data-service-id="buy-ticket"
               >
                 <div className="bg-gradient-to-br from-pink-100 to-pink-50 rounded-full p-4 mb-4 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md">
                   <Ticket className="h-8 w-8 text-pink-600" />
@@ -645,18 +661,13 @@ const Dashboard: React.FC = () => {
                 <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">Ticket</h4>
                 <p className="text-gray-500 text-xs text-center mt-1">Travel & Events</p>
               </div>
-            </div>
-          </div>
 
-          {/* Second Row - Financial Services */}
-          <div className="bg-white rounded-3xl p-6 shadow-lg">
-            <div className="grid grid-cols-4 gap-6">
               <div
                 onClick={() => handleServiceClick('cash-withdraw')}
                 className="flex flex-col items-center p-4 hover:bg-gray-50 rounded-2xl transition-all duration-300 cursor-pointer group"
               >
-                <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-full p-4 mb-4 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md">
-                  <Banknote className="h-8 w-8 text-green-600" />
+                <div className="bg-gradient-to-br from-red-100 to-red-50 rounded-full p-4 mb-4 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md">
+                  <Banknote className="h-8 w-8 text-red-600" />
                 </div>
                 <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">Cash</h4>
                 <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">Withdraw</h4>
@@ -686,9 +697,14 @@ const Dashboard: React.FC = () => {
                 <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">Remittance</h4>
                 <p className="text-gray-500 text-xs text-center mt-1">International</p>
               </div>
+            </div>
+          </div>
 
+          {/* Third Row - Additional Services */}
+          <div className="bg-white rounded-3xl p-6 shadow-lg">
+            <div className="grid grid-cols-4 gap-6">
               <div
-                onClick={() => handleServiceClick('more-services')}
+                onClick={() => setActiveModal('more-services')}
                 className="flex flex-col items-center p-4 hover:bg-gray-50 rounded-2xl transition-all duration-300 cursor-pointer group"
               >
                 <div className="bg-gradient-to-br from-gray-100 to-gray-50 rounded-full p-4 mb-4 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md">
@@ -696,14 +712,9 @@ const Dashboard: React.FC = () => {
                 </div>
                 <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">More</h4>
                 <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">Services</h4>
-                <p className="text-gray-500 text-xs text-center mt-1">All Services</p>
+                <p className="text-gray-500 text-xs text-center mt-1">Explore All</p>
               </div>
-            </div>
-          </div>
 
-          {/* Third Row - Account Services */}
-          <div className="bg-white rounded-3xl p-6 shadow-lg">
-            <div className="grid grid-cols-4 gap-6">
               <div
                 onClick={() => handleServiceClick('bank-ac')}
                 className="flex flex-col items-center p-4 hover:bg-gray-50 rounded-2xl transition-all duration-300 cursor-pointer group"
@@ -723,21 +734,9 @@ const Dashboard: React.FC = () => {
                 <div className="bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-full p-4 mb-4 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md">
                   <CreditCard className="h-8 w-8 text-emerald-600" />
                 </div>
-                <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">Cards</h4>
-                <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight"></h4>
+                <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">Cards</h4>        
+                <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">Management</h4>
                 <p className="text-gray-500 text-xs text-center mt-1">Debit & Credit</p>
-              </div>
-
-              <div
-                onClick={() => handleServiceClick('add-money')}
-                className="flex flex-col items-center p-4 hover:bg-gray-50 rounded-2xl transition-all duration-300 cursor-pointer group"
-              >
-                <div className="bg-gradient-to-br from-yellow-100 to-yellow-50 rounded-full p-4 mb-4 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md">
-                  <DollarSign className="h-8 w-8 text-yellow-600" />
-                </div>
-                <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">Add</h4>
-                <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">Money</h4>
-                <p className="text-gray-500 text-xs text-center mt-1">Fund Account</p>
               </div>
 
               <div
@@ -747,7 +746,7 @@ const Dashboard: React.FC = () => {
                 <div className="bg-gradient-to-br from-violet-100 to-violet-50 rounded-full p-4 mb-4 w-16 h-16 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md">
                   <User className="h-8 w-8 text-violet-600" />
                 </div>
-                <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">Open</h4>
+                <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">Open</h4>        
                 <h4 className="text-gray-800 font-semibold text-sm text-center leading-tight">A/C</h4>
                 <p className="text-gray-500 text-xs text-center mt-1">New Account</p>
               </div>

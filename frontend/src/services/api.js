@@ -2,7 +2,16 @@ import axios from 'axios';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  baseURL: process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '/.netlify/functions/api' : '/api'),
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Create separate admin API instance
+const adminApiInstance = axios.create({
+  baseURL: process.env.REACT_APP_ADMIN_API_URL || (process.env.NODE_ENV === 'production' ? '/.netlify/functions/admin-api' : '/api'),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -11,6 +20,20 @@ const api = axios.create({
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Request interceptor for admin API instance
+adminApiInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -38,33 +61,40 @@ api.interceptors.response.use(
   }
 );
 
+// Response interceptor for admin API instance
+adminApiInstance.interceptors.response.use(
+  (response) => {
+    return response.data;
+  },
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error.response?.data || error.message);
+  }
+);
+
 // Admin API methods
 export const adminAPI = {
   // Generic GET method for admin endpoints
-  get: (endpoint, config = {}) => api.get(`/admin${endpoint}`, config),
+  get: (endpoint, config = {}) => adminApiInstance.get(endpoint, config),
   
   // Generic POST method for admin endpoints
-  post: (endpoint, data, config = {}) => api.post(`/admin${endpoint}`, data, config),
+  post: (endpoint, data, config = {}) => adminApiInstance.post(endpoint, data, config),
   
   // Generic PUT method for admin endpoints
-  put: (endpoint, data, config = {}) => api.put(`/admin${endpoint}`, data, config),
-  
-  // Generic PATCH method for admin endpoints
-  patch: (endpoint, data, config = {}) => api.patch(`/admin${endpoint}`, data, config),
+  put: (endpoint, data, config = {}) => adminApiInstance.put(endpoint, data, config),
   
   // Generic DELETE method for admin endpoints
-  delete: (endpoint, config = {}) => api.delete(`/admin${endpoint}`, config),
-  
-  // Get all users with filtering and pagination
-  getAllUsers: (params = {}) => api.get('/admin/users', { params }),
-  
-  // Get user by ID
-  getUserById: (userId) => api.get(`/admin/users/${userId}`),
+  delete: (endpoint, config = {}) => adminApiInstance.delete(endpoint, config),
 
-  // Update user status (activate/deactivate)
+  // Specific admin methods
+  getUsers: async (params = {}) => adminApiInstance.get('/admin/users', { params }),
   updateUserStatus: async (userId, statusData) => {
     try {
-      const response = await api.patch(`/admin/users/${userId}/status`, statusData);
+      const response = await adminApiInstance.put(`/admin/users/${userId}/status`, statusData);
       return response;
     } catch (error) {
       console.error('Update user status error:', error);
@@ -72,10 +102,9 @@ export const adminAPI = {
     }
   },
 
-  // Create new user
   createUser: async (userData) => {
     try {
-      const response = await api.post('/admin/users', userData);
+      const response = await adminApiInstance.post('/admin/users', userData);
       return response;
     } catch (error) {
       console.error('Create user error:', error);
@@ -83,10 +112,9 @@ export const adminAPI = {
     }
   },
 
-  // Update user details
   updateUser: async (userId, userData) => {
     try {
-      const response = await api.put(`/admin/users/${userId}`, userData);
+      const response = await adminApiInstance.put(`/admin/users/${userId}`, userData);
       return response;
     } catch (error) {
       console.error('Update user error:', error);
@@ -94,7 +122,6 @@ export const adminAPI = {
     }
   },
 
-  // Delete user
   deleteUser: async (userId) => {
     try {
       const response = await api.delete(`/admin/users/${userId}`);
@@ -105,7 +132,6 @@ export const adminAPI = {
     }
   },
 
-  // Reset user password
   resetUserPassword: async (userId) => {
     try {
       const response = await api.post(`/admin/users/${userId}/reset-password`);
@@ -116,10 +142,9 @@ export const adminAPI = {
     }
   },
 
-  // Adjust user balance
   adjustBalance: async (userId, balanceData) => {
     try {
-      const response = await api.patch(`/admin/users/${userId}/balance`, balanceData);
+      const response = await api.post(`/admin/users/${userId}/balance`, balanceData);
       return response;
     } catch (error) {
       console.error('Adjust balance error:', error);
@@ -127,7 +152,6 @@ export const adminAPI = {
     }
   },
 
-  // Get user balance history
   getBalanceHistory: async (userId, params = {}) => {
     try {
       const response = await api.get(`/admin/users/${userId}/balance-history`, { params });
@@ -138,7 +162,6 @@ export const adminAPI = {
     }
   },
 
-  // Get flagged transactions
   getFlaggedTransactions: async (params = {}) => {
     try {
       const response = await api.get('/admin/transactions/flagged', { params });
@@ -149,7 +172,6 @@ export const adminAPI = {
     }
   },
 
-  // Approve transaction
   approveTransaction: async (transactionId, data = {}) => {
     try {
       const response = await api.post(`/admin/transactions/${transactionId}/approve`, data);
@@ -160,7 +182,6 @@ export const adminAPI = {
     }
   },
 
-  // Reject transaction
   rejectTransaction: async (transactionId, data) => {
     try {
       const response = await api.post(`/admin/transactions/${transactionId}/reject`, data);
@@ -171,7 +192,6 @@ export const adminAPI = {
     }
   },
 
-  // Bulk approve transactions
   bulkApproveTransactions: async (data) => {
     try {
       const response = await api.post('/admin/transactions/bulk-approve', data);
@@ -182,7 +202,6 @@ export const adminAPI = {
     }
   },
 
-  // Bulk reject transactions
   bulkRejectTransactions: async (data) => {
     try {
       const response = await api.post('/admin/transactions/bulk-reject', data);
@@ -193,10 +212,9 @@ export const adminAPI = {
     }
   },
 
-  // Get verification settings
   getVerificationSettings: async () => {
     try {
-      const response = await api.get('/admin/verification/settings');
+      const response = await api.get('/admin/settings/verification');
       return response;
     } catch (error) {
       console.error('Get verification settings error:', error);
@@ -204,10 +222,9 @@ export const adminAPI = {
     }
   },
 
-  // Update verification settings
   updateVerificationSettings: async (settings) => {
     try {
-      const response = await api.put('/admin/verification/settings', { settings });
+      const response = await api.put('/admin/settings/verification', settings);
       return response;
     } catch (error) {
       console.error('Update verification settings error:', error);
@@ -215,13 +232,9 @@ export const adminAPI = {
     }
   },
 
-  // Export users to CSV
   exportUsersToCSV: async (params = {}) => {
     try {
-      const response = await api.get('/admin/users/export/csv', { 
-        params,
-        responseType: 'blob'
-      });
+      const response = await api.get('/admin/users/export/csv', { params });
       return response;
     } catch (error) {
       console.error('Export users to CSV error:', error);
@@ -229,7 +242,6 @@ export const adminAPI = {
     }
   },
 
-  // Export users to Excel
   exportUsersToExcel: async (params = {}) => {
     try {
       const response = await api.get('/admin/users/export/excel', { params });
@@ -240,10 +252,9 @@ export const adminAPI = {
     }
   },
 
-  // Get export statistics
   getExportStats: async () => {
     try {
-      const response = await api.get('/admin/users/export/stats');
+      const response = await api.get('/admin/export/stats');
       return response;
     } catch (error) {
       console.error('Get export stats error:', error);
@@ -251,10 +262,9 @@ export const adminAPI = {
     }
   },
 
-  // Get pending signup requests
   getPendingSignupRequests: async (params = {}) => {
     try {
-      const response = await api.get('/admin/signup-requests', { params });
+      const response = await api.get('/admin/signup/requests/pending', { params });
       return response;
     } catch (error) {
       console.error('Get pending signup requests error:', error);
@@ -262,10 +272,9 @@ export const adminAPI = {
     }
   },
 
-  // Approve signup request
   approveSignupRequest: async (requestId) => {
     try {
-      const response = await api.post(`/admin/signup-requests/${requestId}/approve`);
+      const response = await api.post(`/admin/signup/requests/${requestId}/approve`);
       return response;
     } catch (error) {
       console.error('Approve signup request error:', error);
@@ -273,10 +282,9 @@ export const adminAPI = {
     }
   },
 
-  // Reject signup request
   rejectSignupRequest: async (requestId, reason) => {
     try {
-      const response = await api.post(`/admin/signup-requests/${requestId}/reject`, { reason });
+      const response = await api.post(`/admin/signup/requests/${requestId}/reject`, { reason });
       return response;
     } catch (error) {
       console.error('Reject signup request error:', error);
@@ -284,10 +292,9 @@ export const adminAPI = {
     }
   },
 
-  // Get signup request statistics
   getSignupRequestStats: async () => {
     try {
-      const response = await api.get('/admin/signup-requests/stats');
+      const response = await api.get('/admin/signup/stats');
       return response;
     } catch (error) {
       console.error('Get signup request stats error:', error);
@@ -295,10 +302,9 @@ export const adminAPI = {
     }
   },
 
-  // Get dashboard statistics
   getDashboardStats: async () => {
     try {
-      const response = await api.get('/admin/dashboard');
+      const response = await api.get('/admin/stats/dashboard');
       return response;
     } catch (error) {
       console.error('Get dashboard stats error:', error);
@@ -306,10 +312,9 @@ export const adminAPI = {
     }
   },
 
-  // Get system statistics
   getSystemStats: async () => {
     try {
-      const response = await api.get('/admin/stats');
+      const response = await api.get('/admin/stats/system');
       return response;
     } catch (error) {
       console.error('Get system stats error:', error);
@@ -317,14 +322,10 @@ export const adminAPI = {
     }
   },
 
-  // Bulk operations
   bulkUpdateUsers: async (userIds, updateData) => {
     try {
-      const promises = userIds.map(userId => 
-        api.put(`/admin/users/${userId}`, updateData)
-      );
-      const responses = await Promise.all(promises);
-      return responses;
+      const response = await api.put('/admin/users/bulk-update', { userIds, updateData });
+      return response;
     } catch (error) {
       console.error('Bulk update users error:', error);
       throw error;
@@ -333,11 +334,8 @@ export const adminAPI = {
 
   bulkDeleteUsers: async (userIds) => {
     try {
-      const promises = userIds.map(userId => 
-        api.delete(`/admin/users/${userId}`)
-      );
-      const responses = await Promise.all(promises);
-      return responses;
+      const response = await api.post('/admin/users/bulk-delete', { userIds });
+      return response;
     } catch (error) {
       console.error('Bulk delete users error:', error);
       throw error;
@@ -346,16 +344,13 @@ export const adminAPI = {
 
   bulkUpdateUserStatus: async (userIds, statusData) => {
     try {
-      const promises = userIds.map(userId => 
-        api.patch(`/admin/users/${userId}/status`, statusData)
-      );
-      const responses = await Promise.all(promises);
-      return responses;
+      const response = await api.put('/admin/users/bulk-status', { userIds, statusData });
+      return response;
     } catch (error) {
       console.error('Bulk update user status error:', error);
       throw error;
     }
-  }
+  },
 };
 
 // User API methods
@@ -458,7 +453,7 @@ export const authAPI = {
   
   approveDepositRequest: async (requestId, data = {}) => {
     try {
-      const response = await api.post(`/admin/deposits/${requestId}/approve`, data);
+      const response = await api.post(`/admin/deposits/requests/${requestId}/approve`, data);
       return response;
     } catch (error) {
       console.error('Approve deposit request error:', error);
@@ -468,7 +463,7 @@ export const authAPI = {
 
   cancelDepositRequest: async (requestId, data = {}) => {
     try {
-      const response = await api.post(`/admin/deposits/${requestId}/cancel`, data);
+      const response = await api.post(`/admin/deposits/requests/${requestId}/cancel`, data);
       return response;
     } catch (error) {
       console.error('Cancel deposit request error:', error);
@@ -478,7 +473,7 @@ export const authAPI = {
 
   bulkApproveDepositRequests: async (requestIds) => {
     try {
-      const response = await api.post('/admin/deposits/bulk/approve', { requestIds });
+      const response = await api.post('/admin/deposits/requests/bulk-approve', { requestIds });
       return response;
     } catch (error) {
       console.error('Bulk approve deposit requests error:', error);
@@ -488,7 +483,7 @@ export const authAPI = {
 
   bulkCancelDepositRequests: async (requestIds) => {
     try {
-      const response = await api.post('/admin/deposits/bulk/cancel', { requestIds });
+      const response = await api.post('/admin/deposits/requests/bulk-cancel', { requestIds });
       return response;
     } catch (error) {
       console.error('Bulk cancel deposit requests error:', error);
@@ -497,11 +492,9 @@ export const authAPI = {
   },
 
   // Withdrawal Request Management
-  getWithdrawalRequests: (params = {}) => api.get('/admin/withdrawals/requests', { params }),
-  
   approveWithdrawalRequest: async (requestId, data = {}) => {
     try {
-      const response = await api.post(`/admin/withdrawals/${requestId}/approve`, data);
+      const response = await api.post(`/admin/withdrawals/requests/${requestId}/approve`, data);
       return response;
     } catch (error) {
       console.error('Approve withdrawal request error:', error);
@@ -511,7 +504,7 @@ export const authAPI = {
 
   rejectWithdrawalRequest: async (requestId, data = {}) => {
     try {
-      const response = await api.post(`/admin/withdrawals/${requestId}/reject`, data);
+      const response = await api.post(`/admin/withdrawals/requests/${requestId}/reject`, data);
       return response;
     } catch (error) {
       console.error('Reject withdrawal request error:', error);
@@ -521,7 +514,7 @@ export const authAPI = {
 
   updateWithdrawalPriority: async (requestId, priority) => {
     try {
-      const response = await api.put(`/admin/withdrawals/${requestId}/priority`, { priority });
+      const response = await api.put(`/admin/withdrawals/requests/${requestId}/priority`, { priority });
       return response;
     } catch (error) {
       console.error('Update withdrawal priority error:', error);
@@ -531,7 +524,7 @@ export const authAPI = {
 
   bulkApproveWithdrawalRequests: async (requestIds) => {
     try {
-      const response = await api.post('/admin/withdrawals/bulk/approve', { requestIds });
+      const response = await api.post('/admin/withdrawals/requests/bulk-approve', { requestIds });
       return response;
     } catch (error) {
       console.error('Bulk approve withdrawal requests error:', error);
@@ -541,7 +534,7 @@ export const authAPI = {
 
   bulkRejectWithdrawalRequests: async (requestIds) => {
     try {
-      const response = await api.post('/admin/withdrawals/bulk/reject', { requestIds });
+      const response = await api.post('/admin/withdrawals/requests/bulk-reject', { requestIds });
       return response;
     } catch (error) {
       console.error('Bulk reject withdrawal requests error:', error);
@@ -551,7 +544,7 @@ export const authAPI = {
 
   bulkUpdateWithdrawalPriority: async (requestIds, priority) => {
     try {
-      const response = await api.put('/admin/withdrawals/bulk/priority', { requestIds, priority });
+      const response = await api.put('/admin/withdrawals/requests/bulk-priority', { requestIds, priority });
       return response;
     } catch (error) {
       console.error('Bulk update withdrawal priority error:', error);
@@ -559,10 +552,10 @@ export const authAPI = {
     }
   },
 
-  // Transaction Comments
+  // Comments
   addTransactionComment: async (transactionId, data) => {
     try {
-      const response = await api.post(`/admin/transactions/${transactionId}/comment`, data);
+      const response = await api.post(`/admin/transactions/${transactionId}/comments`, data);
       return response;
     } catch (error) {
       console.error('Add transaction comment error:', error);
@@ -572,18 +565,13 @@ export const authAPI = {
 
   getTransactionWithComments: async (transactionId) => {
     try {
-      const response = await api.get(`/admin/transactions/${transactionId}/comments`);
+      const response = await api.get(`/admin/transactions/${transactionId}`);
       return response;
     } catch (error) {
       console.error('Get transaction with comments error:', error);
       throw error;
     }
   },
-
-  // Monitoring endpoints
-  getMonitoringStats: (params = {}) => api.get('/admin/monitoring/stats', { params }),
-  getFinancialReports: (params = {}) => api.get('/admin/monitoring/financial-reports', { params }),
-  getFilteredTransactions: (params = {}) => api.get('/admin/monitoring/transactions', { params })
 };
 
 export default api;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+// @ts-ignore – lucide-react types not installed, but icons exist at runtime
 import { 
   Receipt, 
   AlertTriangle, 
@@ -21,15 +22,13 @@ import {
   Car,
   Home,
   CreditCard,
-  TrendingUp,
-  TrendingDown,
-  BarChart3,
-  PieChart,
-  Activity,
   Shield,
   Ban,
   CheckSquare
 } from 'lucide-react';
+
+
+
 
 interface BillPayment {
   id: string;

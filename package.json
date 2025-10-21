@@ -2,6 +2,7 @@
   "name": "ib-ltd-api",
   "version": "12.0.0",
   "description": "IB LTD API",
+  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
@@ -9,6 +10,7 @@
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "express": "^4.18.2",
+    "multer": "^2.0.2",
     "serverless-http": "^3.2.0"
   },
   "keywords": [],

@@ -19,9 +19,9 @@ export const AuthProvider = ({ children }) => {
   // Set up axios interceptor for token
   useEffect(() => {
     // Set base URL for axios
-  axios.defaults.baseURL = process.env.NODE_ENV === 'production' 
-    ? '/.netlify/functions' 
-    : 'http://localhost:5000';
+    axios.defaults.baseURL = process.env.NODE_ENV === 'production' 
+      ? '/.netlify/functions/api' 
+      : '/api';
     
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }) => {
             setUser(mockUser);
           } else {
             // Regular API validation for real tokens
-            const response = await axios.get('/api/auth/me');
+            const response = await axios.get('/auth/me');
             setUser(response.data.user);
           }
         } catch (error) {
@@ -88,24 +88,41 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, [token]);
 
-  const login = async (email, password) => {
+  const login = async (email, password, adminKey = null) => {
     try {
       // First try admin login if this looks like an admin email or if regular login fails
       let response;
       let isAdminLogin = false;
       
       // Check if this is likely an admin login (admin email or specific credentials)
-      if (email.includes('admin') || email === 'admin@ibltd.com') {
+      if (email.includes('admin') || email === 'admin@ibltd.com' || adminKey) {
         try {
-          response = await axios.post('/api/admin/auth/login', {
+          const adminPayload = {
             email,
             password
+          };
+          
+          // Add adminKey if provided
+          if (adminKey) {
+            adminPayload.adminKey = adminKey;
+          } else {
+            // Default admin key for backward compatibility
+            adminPayload.adminKey = 'admin123';
+          }
+          
+          // Create admin API instance for login
+          const adminApiInstance = axios.create({
+            baseURL: process.env.NODE_ENV === 'production' 
+              ? '/.netlify/functions/admin-api' 
+              : '/api'
           });
+          
+          response = await adminApiInstance.post('/admin/auth/login', adminPayload);
           isAdminLogin = true;
         } catch (adminError) {
           // If admin login fails, fall back to regular login
           console.log('Admin login failed, trying regular login');
-          response = await axios.post('/api/auth/login', {
+          response = await axios.post('/auth/login', {
             email,
             password
           });
@@ -138,13 +155,23 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Invalid token received from server');
       }
 
-      // Validate token format
+      // For admin tokens, skip JWT validation as they use simple string tokens
+      if (isAdminLogin) {
+        // Admin tokens are simple strings, no need for JWT validation
+        localStorage.setItem('token', newToken);
+        setToken(newToken);
+        setUser(userData);
+        
+        return { success: true, user: userData, isAdmin: isAdminLogin };
+      }
+
+      // Validate token format for regular JWT tokens
       const tokenParts = newToken.split('.');
       if (tokenParts.length !== 3) {
         throw new Error('Invalid token format received');
       }
 
-      // Check token expiration
+      // Check token expiration for JWT tokens
       try {
         const payload = JSON.parse(atob(tokenParts[1]));
         const isExpired = payload.exp * 1000 < Date.now();
