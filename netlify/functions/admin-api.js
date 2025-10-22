@@ -108,7 +108,8 @@ exports.handler = async (event, context) => {
         };
       }
 
-      if (!isValidEmail(email)) {
+      // Skip email validation for username-based logins
+      if (email.includes('@') && !isValidEmail(email)) {
         return {
           statusCode: 400,
           headers,
@@ -119,14 +120,15 @@ exports.handler = async (event, context) => {
         };
       }
 
-      // Check credentials
+      // Check credentials - accept both email and username formats
       const validCredentials = [
         { email: 'admin@example.com', password: 'admin123', adminKey: 'admin123' },
-        { email: 'admin@ibltd.com', password: 'admin123', adminKey: 'admin123' }
+        { email: 'admin@ibltd.com', password: 'admin123', adminKey: 'admin123' },
+        { email: 'admin', password: 'admin123', adminKey: 'ADMIN_MASTER_KEY_2024' }
       ];
 
       const isValid = validCredentials.some(cred => 
-        cred.email.toLowerCase() === email.toLowerCase() &&
+        (cred.email.toLowerCase() === email.toLowerCase() || cred.email === email) &&
         cred.password === password &&
         cred.adminKey === adminKey
       );
