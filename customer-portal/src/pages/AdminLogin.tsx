@@ -24,19 +24,17 @@ const AdminLogin: React.FC = () => {
     setError('');
 
     try {
-      const possibleUrls = [
-        process.env.REACT_APP_API_URL,
-        'https://ib-ltd-backend.vercel.app',
-        'https://ib-ltd-backend.onrender.com',
-        'http://localhost:5000'
-      ].filter(Boolean);
+      // Use the correct admin API endpoint based on environment
+      const adminApiUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://international-bank-limited.netlify.app/.netlify/functions/admin-api'
+        : 'http://localhost:5001/api';
+      
+      const loginEndpoint = `${adminApiUrl}/admin/auth/login`;
 
       let lastError = '';
       let loginSuccessful = false;
 
-      for (const baseUrl of possibleUrls) {
-        try {
-          const loginEndpoint = `${baseUrl}/api/admin/auth/login`;
+      try {
           
           const response = await fetch(loginEndpoint, {
             method: 'POST',
@@ -52,7 +50,8 @@ const AdminLogin: React.FC = () => {
 
           if (response.status === 404) {
             lastError = `404 Not Found: ${loginEndpoint}`;
-            continue;
+            setError(lastError);
+            return;
           }
 
           const responseText = await response.text();
@@ -62,7 +61,8 @@ const AdminLogin: React.FC = () => {
             data = JSON.parse(responseText);
           } catch (parseError) {
             lastError = `JSON Parse Error from ${loginEndpoint}: ${parseError}`;
-            continue;
+            setError(lastError);
+            return;
           }
 
           if (response.ok && data.success) {
@@ -85,56 +85,21 @@ const AdminLogin: React.FC = () => {
             setTimeout(() => {
               navigate('/admin/dashboard');
             }, 100);
-            break;
+            return;
           } else if (response.status === 401) {
             lastError = `401 Unauthorized: ${data.message}`;
-            break;
+            setError(lastError);
+            return;
           } else {
             lastError = `Login failed: ${data.message}`;
           }
         } catch (fetchError: any) {
           lastError = `Network error: ${fetchError.message}`;
-          continue;
         }
-      }
 
-      if (!loginSuccessful) {
-        // Client-side fallback authentication
-        const validCredentials = [
-          { username: 'admin@example.com', password: 'admin123', adminKey: 'admin123' },
-          { username: 'admin', password: 'admin123', adminKey: 'admin123' },
-          { username: 'admin@iblimited.com', password: 'admin123', adminKey: 'admin123' }
-        ];
-
-        const isValidCredentials = validCredentials.some(valid => 
-          (credentials.username === valid.username || 
-           credentials.username.toLowerCase() === valid.username.toLowerCase()) &&
-          credentials.password === valid.password &&
-          credentials.adminKey === valid.adminKey
-        );
-
-        if (isValidCredentials) {
-          const adminUser = {
-            id: 'admin-fallback',
-            username: credentials.username,
-            email: credentials.username.includes('@') ? credentials.username : 'admin@iblimited.com',
-            role: 'admin',
-            permissions: ['all']
-          };
-
-          localStorage.setItem('adminUser', JSON.stringify(adminUser));
-          localStorage.setItem('adminToken', 'admin-fallback-token-' + Date.now());
-          localStorage.setItem('isAdminAuthenticated', 'true');
-
-          setUser(adminUser);
-          
-          setTimeout(() => {
-            navigate('/admin/dashboard');
-          }, 100);
-        } else {
-          setError('Invalid credentials. Please check your username, password, and admin key.');
+        if (!loginSuccessful) {
+          setError(lastError || 'Login failed. Please check your credentials.');
         }
-      }
     } catch (error: any) {
       setError('Login failed. Please try again.');
     } finally {
