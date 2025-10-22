@@ -158,7 +158,67 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // User login endpoint
+    // Admin login endpoint
+    if (path === '/admin/auth/login' && method === 'POST') {
+      const { email, password, adminKey } = JSON.parse(body || '{}');
+
+      if (!email || !password || !adminKey) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Email, password, and admin key are required'
+          })
+        };
+      }
+
+      // Check admin credentials
+      const validCredentials = [
+        { email: 'admin@example.com', password: 'admin123', adminKey: 'admin123' },
+        { email: 'admin@ibltd.com', password: 'admin123', adminKey: 'admin123' },
+        { email: 'admin', password: 'admin123', adminKey: 'ADMIN_MASTER_KEY_2024' }
+      ];
+
+      const isValid = validCredentials.some(cred => 
+        (cred.email.toLowerCase() === email.toLowerCase() || cred.email === email) &&
+        cred.password === password &&
+        cred.adminKey === adminKey
+      );
+
+      if (!isValid) {
+        return {
+          statusCode: 401,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            message: 'Invalid credentials'
+          })
+        };
+      }
+
+      // Generate token
+      const token = generateToken();
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          success: true,
+          message: 'Login successful',
+          data: {
+            token,
+            user: {
+              email: email.toLowerCase(),
+              role: 'admin',
+              permissions: ['read', 'write', 'delete', 'admin']
+            }
+          }
+        })
+      };
+    }
+
+    // Regular user login endpoint
     if (path === '/login' && method === 'POST') {
       const body = JSON.parse(event.body || '{}');
       const { email, password } = body;
