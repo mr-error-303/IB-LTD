@@ -275,44 +275,53 @@ exports.handler = async (event, context) => {
     if (path === '/admin/auth/login' && method === 'POST') {
       console.log('Admin endpoint matched!');
       const body = JSON.parse(event.body || '{}');
-      const { email, password, adminKey } = body;
+      const { email, username, password, adminKey } = body;
+
+      // Accept either email or username
+      const loginField = email || username;
 
       // Input validation
-      if (!email || !password || !adminKey) {
+      if (!loginField || !password || !adminKey) {
         return {
           statusCode: 400,
           headers,
           body: JSON.stringify({
             success: false,
-            message: 'Email, password, and admin key are required'
+            message: 'Username/email, password, and admin key are required'
           })
         };
       }
 
       // Normalize inputs
-      const normalizedEmail = email.toLowerCase().trim();
+      const normalizedLogin = loginField.toLowerCase().trim();
       const normalizedPassword = password.trim();
       const normalizedAdminKey = adminKey.trim();
 
       // Valid admin credentials (in production, use environment variables)
       const validCredentials = [
         { 
-          email: 'admin@example.com', 
+          login: 'admin@example.com', 
           password: 'admin123', 
           adminKey: 'admin123',
           name: 'System Administrator'
         },
         { 
-          email: 'admin@ibltd.com', 
+          login: 'admin@ibltd.com', 
           password: 'admin123', 
           adminKey: 'admin123',
           name: 'Bank Administrator'
+        },
+        { 
+          login: 'admin', 
+          password: 'admin123', 
+          adminKey: 'ADMIN_MASTER_KEY_2024',
+          name: 'Main Administrator'
         }
       ];
 
       // Authenticate
       const admin = validCredentials.find(cred => 
-        cred.email === normalizedEmail && 
+        cred.login === normalizedLogin && 
         cred.password === normalizedPassword && 
         cred.adminKey === normalizedAdminKey
       );
@@ -340,7 +349,7 @@ exports.handler = async (event, context) => {
           token,
           user: {
             id: 1,
-            email: normalizedEmail,
+            email: normalizedLogin,
             role: 'admin',
             name: admin.name,
             permissions: ['users:read', 'users:write', 'loans:read', 'loans:write', 'reports:read']
