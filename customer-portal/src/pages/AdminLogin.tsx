@@ -24,12 +24,10 @@ const AdminLogin: React.FC = () => {
     setError('');
 
     try {
-      // Use the correct admin API endpoint based on environment
-      const adminApiUrl = process.env.NODE_ENV === 'production' 
-        ? 'https://international-bank-limited.netlify.app/.netlify/functions/admin-api'
-        : 'http://localhost:5001/api';
-      
-      const loginEndpoint = `${adminApiUrl}/admin/auth/login`;
+      // Determine the correct admin API URL
+      const loginEndpoint = process.env.NODE_ENV === 'production' 
+        ? 'https://international-bank-limited.netlify.app/admin-api/admin/auth/login'
+        : 'http://localhost:5001/api/admin/auth/login';
 
       let lastError = '';
       let loginSuccessful = false;

@@ -59,7 +59,14 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request logging middleware
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - Original URL: ${req.originalUrl}`);
+  
+  // Handle Netlify redirect paths - remove the /admin-api prefix
+  if (req.path.startsWith('/admin-api/')) {
+    req.url = req.url.replace('/admin-api', '');
+    req.path = req.path.replace('/admin-api', '');
+  }
+  
   next();
 });
 
